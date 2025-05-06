@@ -9,14 +9,14 @@ Widget::Widget(QWidget *parent) :
     ui(new Ui::Widget),
     _pDeviceEnumerator(nullptr),
     _pDefaultDevice(nullptr),
-    _pPropertyStore(nullptr),
-    _pPolicyConfig(nullptr),
     _pDeviceCollection(nullptr),
     _pAudioEndpointVolume(nullptr),
+    _pPropertyStore(nullptr),
+    _pPolicyConfig(nullptr),
     _isEnabledDevice(false),
+    _isListenSM(false),
     _isPowerSaveEnabled(true),
-    _isAppLoading(true),
-    _isListenSM(false)
+    _isAppLoading(true)
 {
     ui->setupUi(this);
 
