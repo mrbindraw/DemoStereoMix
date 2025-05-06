@@ -11,7 +11,8 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 TARGET = DemoStereoMix
 TEMPLATE = app
 
-INCLUDEPATH += "$$WINDOWSSDKDIR/Lib/winv6.3/um/x64"
+# WINDOWSSDKDIR = C:\Program Files (x86)\Windows Kits\10\Lib\10.0.22621.0
+INCLUDEPATH += "$$WINDOWSSDKDIR/um/x64"
 LIBS += Ole32.lib Winmm.lib Shlwapi.lib propsys.lib
 
 
