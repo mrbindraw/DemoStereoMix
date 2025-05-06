@@ -48,8 +48,6 @@ private slots:
 private:
     Ui::Widget *ui;
 
-    HRESULT hr;
-
     IMMDeviceEnumerator     *_pDeviceEnumerator;
     IMMDevice               *_pDefaultDevice;
     IMMDeviceCollection     *_pDeviceCollection;

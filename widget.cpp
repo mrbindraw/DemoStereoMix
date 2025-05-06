@@ -21,7 +21,7 @@ Widget::Widget(QWidget *parent) :
     ui->setupUi(this);
 
     CoInitialize(nullptr);
-    hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_INPROC_SERVER, __uuidof(IMMDeviceEnumerator), (LPVOID *)&_pDeviceEnumerator);
+    HRESULT hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_INPROC_SERVER, __uuidof(IMMDeviceEnumerator), (LPVOID *)&_pDeviceEnumerator);
     if (hr != S_OK)
         return;
 
@@ -75,7 +75,7 @@ void Widget::getCurrentPlaybackDevice()
     if(!_pPolicyConfig)
         return;
 
-    hr = _pPolicyConfig->GetPropertyValue(_wstrSMDevId.c_str(), 0, PKEY_MonitorOutput, &propDevId);
+    HRESULT hr = _pPolicyConfig->GetPropertyValue(_wstrSMDevId.c_str(), 0, PKEY_MonitorOutput, &propDevId);
     if(hr != S_OK)
     {
         PropVariantClear(&propDevId);
@@ -105,7 +105,7 @@ void Widget::getCurrentPlaybackDevice()
 
 void Widget::createPlaybackDevicesList()
 {
-    _pDeviceEnumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, &_pDeviceCollection);
+    HRESULT hr = _pDeviceEnumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, &_pDeviceCollection);
     if (hr != S_OK)
         return;
 
@@ -153,7 +153,7 @@ void Widget::setDefaultRecordDevice(const wchar_t *id)
 
 void Widget::getStereoMixInfo()
 {
-    _pDeviceEnumerator->EnumAudioEndpoints(eCapture, DEVICE_STATEMASK_ALL, &_pDeviceCollection);
+    HRESULT hr = _pDeviceEnumerator->EnumAudioEndpoints(eCapture, DEVICE_STATEMASK_ALL, &_pDeviceCollection);
     if (hr != S_OK)
         return;
 
@@ -229,7 +229,7 @@ void Widget::refreshStereoMixVolume()
 {
     this->setDefaultRecordDevice(_wstrSMDevId.c_str()); // set StereoMix
 
-    hr = _pDeviceEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &_pDefaultDevice);
+    HRESULT hr = _pDeviceEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &_pDefaultDevice);
     if(hr != S_OK)
         return;
 
@@ -288,7 +288,7 @@ void Widget::on_cbListen_toggled(bool checked)
 
     // TRUE -1 - on; FALSE 0 - off
     InitPropVariantFromBoolean(checked, &valKey);
-    hr = _pPolicyConfig->SetPropertyValue(_wstrSMDevId.c_str(), 0, PKEY_MonitorEnabled, &valKey);
+    HRESULT hr = _pPolicyConfig->SetPropertyValue(_wstrSMDevId.c_str(), 0, PKEY_MonitorEnabled, &valKey);
     if(hr != S_OK)
         return;
 
@@ -306,7 +306,7 @@ void Widget::on_cbEnableSM_toggled(bool checked)
     if(!_pPolicyConfig)
         return;
 
-    hr = _pPolicyConfig->SetEndpointVisibility(_wstrSMDevId.c_str(), (int)checked); // 0/1 - disable/enable StereoMix device
+    HRESULT hr = _pPolicyConfig->SetEndpointVisibility(_wstrSMDevId.c_str(), (int)checked); // 0/1 - disable/enable StereoMix device
     if(hr != S_OK)
         return;
 
@@ -322,6 +322,7 @@ void Widget::on_cBox_AudioDevices_activated(int index)
     if(!_pPolicyConfig)
         return;
 
+    HRESULT hr;
     PROPVARIANT propDevId;
     PropVariantInit(&propDevId);
 
@@ -362,7 +363,7 @@ void Widget::on_rbDisable_toggled(bool checked)
     PropVariantInit(&valKey);
 
     InitPropVariantFromBoolean(TRUE, &valKey);
-    hr = _pPolicyConfig->SetPropertyValue(_wstrSMDevId.c_str(), 0, PKEY_MonitorPauseOnBattery, &valKey);
+    HRESULT hr = _pPolicyConfig->SetPropertyValue(_wstrSMDevId.c_str(), 0, PKEY_MonitorPauseOnBattery, &valKey);
     if(hr != S_OK)
         return;
 
@@ -386,7 +387,7 @@ void Widget::on_rbContinue_toggled(bool checked)
     PropVariantInit(&valKey);
 
     InitPropVariantFromBoolean(FALSE, &valKey);
-    hr = _pPolicyConfig->SetPropertyValue(_wstrSMDevId.c_str(), 0, PKEY_MonitorPauseOnBattery, &valKey);
+    HRESULT hr = _pPolicyConfig->SetPropertyValue(_wstrSMDevId.c_str(), 0, PKEY_MonitorPauseOnBattery, &valKey);
     if(hr != S_OK)
         return;
 
