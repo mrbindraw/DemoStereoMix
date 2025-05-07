@@ -1,12 +1,16 @@
 #ifndef WIDGET_H
 #define WIDGET_H
 
+#include <initguid.h>
+#include <Windows.h>
+#include <cguid.h>
+#include <atlbase.h>
+
 #include <QWidget>
 #include <QDebug>
 #include <QtTest/QTest>
 #include <QQueue>
 
-#include <Windows.h>
 #include <mmdeviceapi.h>
 #include <endpointvolume.h>
 #include <Functiondiscoverykeys_devpkey.h>
@@ -48,12 +52,8 @@ private slots:
 private:
     Ui::Widget *ui;
 
-    IMMDeviceEnumerator     *_pDeviceEnumerator;
-    IMMDevice               *_pDefaultDevice;
-    IMMDeviceCollection     *_pDeviceCollection;
-    IAudioEndpointVolume    *_pAudioEndpointVolume;
-    IPropertyStore          *_pPropertyStore;
-    IPolicyConfig           *_pPolicyConfig;
+    CComPtr<IMMDeviceEnumerator> _pDeviceEnumerator;
+    CComPtr<IPolicyConfig>  _pPolicyConfig;
 
 
     std::wstring _wstrSMDevId;

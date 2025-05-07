@@ -1,5 +1,3 @@
-#include <initguid.h>
-
 #include "widget.h"
 #include "ui_widget.h"
 
@@ -8,10 +6,6 @@ Widget::Widget(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::Widget),
     _pDeviceEnumerator(nullptr),
-    _pDefaultDevice(nullptr),
-    _pDeviceCollection(nullptr),
-    _pAudioEndpointVolume(nullptr),
-    _pPropertyStore(nullptr),
     _pPolicyConfig(nullptr),
     _isEnabledDevice(false),
     _isListenSM(false),
@@ -43,15 +37,19 @@ Widget::Widget(QWidget *parent) :
 
     this->getStereoMixInfo();
 
-    this->setDefaultRecordDevice(_wstrSMDevId.c_str()); // set StereoMix
+    //this->setDefaultRecordDevice(_wstrSMDevId.c_str()); // set StereoMix
 
-    hr = _pDeviceEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &_pDefaultDevice);
+    /*
+    CComPtr<IMMDevice> Device;
+    hr = _pDeviceEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &Device);
     if(hr != S_OK) // when all record devices off on load app
         return;
 
-    hr = _pDefaultDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, NULL, (PVOID *)&_pAudioEndpointVolume);
+    CComPtr<IAudioEndpointVolume> AudioEndpointVolume;
+    hr = Device->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, NULL, (PVOID *)&_pAudioEndpointVolume);
     if(hr != S_OK)
         return;
+    */
 }
 
 void Widget::showEvent(QShowEvent *)
@@ -105,29 +103,33 @@ void Widget::getCurrentPlaybackDevice()
 
 void Widget::createPlaybackDevicesList()
 {
-    HRESULT hr = _pDeviceEnumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, &_pDeviceCollection);
+    CComPtr<IMMDeviceCollection> DeviceCollection;
+    HRESULT hr = _pDeviceEnumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, &DeviceCollection);
     if (hr != S_OK)
         return;
 
     UINT Count = 0;
-    _pDeviceCollection->GetCount(&Count);
+    DeviceCollection->GetCount(&Count);
 
     LPWSTR deviceId = nullptr;
     QString name = "";
 
     ui->cBox_AudioDevices->insertItem(0, "Default Playback Device");
 
+    CComPtr<IMMDevice> Device;
+    CComPtr<IPropertyStore> PropertyStore;
+
     for (UINT i=0; i < Count; i++)
     {
-        _pDeviceCollection->Item(i, &_pDefaultDevice);
-        _pDefaultDevice->OpenPropertyStore(STGM_READ, &_pPropertyStore);
+        DeviceCollection->Item(i, &Device);
+        Device->OpenPropertyStore(STGM_READ, &PropertyStore);
 
         PROPVARIANT namePlaybackDevice;
         PropVariantInit(&namePlaybackDevice);
-        _pPropertyStore->GetValue(PKEY_Device_FriendlyName, &namePlaybackDevice);
+        PropertyStore->GetValue(PKEY_Device_FriendlyName, &namePlaybackDevice);
 
         name = QString::fromWCharArray(namePlaybackDevice.pwszVal);
-        _pDefaultDevice->GetId(&deviceId);
+        Device->GetId(&deviceId);
 
         _stAudioDevice.name = name;
         _stAudioDevice.id.assign(deviceId);
@@ -153,39 +155,44 @@ void Widget::setDefaultRecordDevice(const wchar_t *id)
 
 void Widget::getStereoMixInfo()
 {
-    HRESULT hr = _pDeviceEnumerator->EnumAudioEndpoints(eCapture, DEVICE_STATEMASK_ALL, &_pDeviceCollection);
+    CComPtr<IMMDeviceCollection> DeviceCollection;
+    HRESULT hr = _pDeviceEnumerator->EnumAudioEndpoints(eCapture, DEVICE_STATEMASK_ALL, &DeviceCollection);
     if (hr != S_OK)
         return;
 
     UINT Count = 0;
-    _pDeviceCollection->GetCount(&Count);
+    DeviceCollection->GetCount(&Count);
     DWORD stateDevice = 0;
     LPWSTR deviceId = nullptr;
     QString name = "";
+
+    CComPtr<IMMDevice> Device;
+    CComPtr<IPropertyStore> PropertyStore;
+
     for (UINT i=0; i < Count; i++)
     {
-        _pDeviceCollection->Item(i, &_pDefaultDevice);
-        _pDefaultDevice->OpenPropertyStore(STGM_READ, &_pPropertyStore);
+        DeviceCollection->Item(i, &Device);
+        Device->OpenPropertyStore(STGM_READ, &PropertyStore);
 
         PROPVARIANT nameDevice;
         PropVariantInit(&nameDevice);
-        _pPropertyStore->GetValue(PKEY_Device_FriendlyName, &nameDevice);
+        PropertyStore->GetValue(PKEY_Device_FriendlyName, &nameDevice);
 
         name = QString::fromWCharArray(nameDevice.pwszVal);
         if(name.contains("Stereo Mix") || name.contains("Стерео микшер"))
         {
-            _pDefaultDevice->GetState(&stateDevice);
+            Device->GetState(&stateDevice);
             // https://msdn.microsoft.com/en-us/library/windows/desktop/dd371410(v=vs.85).aspx
             // https://msdn.microsoft.com/en-us/library/windows/desktop/dd370823(v=vs.85).aspx
             _isEnabledDevice = stateDevice >= 2 ? false : true;
 
             PROPVARIANT PowerMgrState;
             PropVariantInit(&PowerMgrState);
-            _pPropertyStore->GetValue(PKEY_MonitorPauseOnBattery, &PowerMgrState);
+            PropertyStore->GetValue(PKEY_MonitorPauseOnBattery, &PowerMgrState);
             _isPowerSaveEnabled = PowerMgrState.boolVal;
             PropVariantClear(&PowerMgrState);
 
-            _pDefaultDevice->GetId(&deviceId);
+            Device->GetId(&deviceId);
             _wstrSMDevId.assign(deviceId);
 
             CoTaskMemFree(deviceId);
@@ -193,24 +200,6 @@ void Widget::getStereoMixInfo()
         }
 
         PropVariantClear(&nameDevice);
-    }
-
-    if(_pPropertyStore)
-    {
-        _pPropertyStore->Release();
-        _pPropertyStore = nullptr;
-    }
-
-    if(_pDefaultDevice)
-    {
-        _pDefaultDevice->Release();
-        _pDefaultDevice = nullptr;
-    }
-
-    if(_pDeviceCollection)
-    {
-        _pDeviceCollection->Release();
-        _pDeviceCollection = nullptr;
     }
 
     if(!_pPolicyConfig)
@@ -229,18 +218,20 @@ void Widget::refreshStereoMixVolume()
 {
     this->setDefaultRecordDevice(_wstrSMDevId.c_str()); // set StereoMix
 
-    HRESULT hr = _pDeviceEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &_pDefaultDevice);
+    CComPtr<IMMDevice> Device;
+    HRESULT hr = _pDeviceEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &Device);
     if(hr != S_OK)
         return;
 
-    hr = _pDefaultDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, NULL, (PVOID *)&_pAudioEndpointVolume);
+    CComPtr<IAudioEndpointVolume> AudioEndpointVolume;
+    hr = Device->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, NULL, (PVOID *)&AudioEndpointVolume);
     if(hr != S_OK)
         return;
 
-    if(_pAudioEndpointVolume)
+    if(AudioEndpointVolume)
     {
         float scalarVolume = 0.0f;
-        _pAudioEndpointVolume->GetMasterVolumeLevelScalar(&scalarVolume);
+        AudioEndpointVolume->GetMasterVolumeLevelScalar(&scalarVolume);
         float volume = getValueFromScalar(scalarVolume);
         ui->horizontalSlider->setValue(volume);
         ui->lbl_Value->setText(QString::number(volume));
@@ -261,10 +252,20 @@ unsigned int Widget::getValueFromScalar(float value)
 // change volume StereoMix
 void Widget::on_horizontalSlider_valueChanged(int value)
 {
-    if(_pAudioEndpointVolume)
+    CComPtr<IMMDevice> Device;
+    HRESULT hr = _pDeviceEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &Device);
+    if(hr != S_OK)
+        return;
+
+    CComPtr<IAudioEndpointVolume> AudioEndpointVolume;
+    hr = Device->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, NULL, (PVOID *)&AudioEndpointVolume);
+    if(hr != S_OK)
+        return;
+
+    if(AudioEndpointVolume)
     {
         float val = this->getScalarFromValue(value);
-        _pAudioEndpointVolume->SetMasterVolumeLevelScalar(val, nullptr);
+        AudioEndpointVolume->SetMasterVolumeLevelScalar(val, nullptr);
         ui->lbl_Value->setText(QString::number(value));
     }
 }
@@ -396,42 +397,6 @@ void Widget::on_rbContinue_toggled(bool checked)
 
 Widget::~Widget()
 {
-    if(_pPolicyConfig)
-    {
-        _pPolicyConfig->Release();
-        _pPolicyConfig = nullptr;
-    }
-
-    if(_pAudioEndpointVolume)
-    {
-        _pAudioEndpointVolume->Release();
-        _pAudioEndpointVolume = nullptr;
-    }
-
-    if(_pPropertyStore)
-    {
-        _pPropertyStore->Release();
-        _pPropertyStore = nullptr;
-    }
-
-    if(_pDefaultDevice)
-    {
-        _pDefaultDevice->Release();
-        _pDefaultDevice = nullptr;
-    }
-
-    if(_pDeviceCollection)
-    {
-        _pDeviceCollection->Release();
-        _pDeviceCollection = nullptr;
-    }
-
-    if(_pDeviceEnumerator)
-    {
-        _pDeviceEnumerator->Release();
-        _pDeviceEnumerator = nullptr;
-    }
-
     CoUninitialize();
 
     delete ui;
