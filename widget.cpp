@@ -220,6 +220,13 @@ void Widget::getStereoMixInfo()
 
 void Widget::refreshStereoMixVolume()
 {
+    if(!_isEnabledDevice)
+    {
+        ui->horizontalSlider->setValue(0);
+        ui->lbl_Value->setText(QString::number(0));
+        return;
+    }
+
     this->setDefaultRecordDevice(_wstrSMDevId.c_str()); // set StereoMix
 
     CComPtr<IMMDevice> Device;
@@ -256,6 +263,11 @@ unsigned int Widget::getValueFromScalar(float value)
 // change volume StereoMix
 void Widget::on_horizontalSlider_valueChanged(int value)
 {
+    if(!_isEnabledDevice)
+    {
+        return;
+    }
+
     CComPtr<IMMDevice> Device;
     HRESULT hr = _pDeviceEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &Device);
     if(hr != S_OK)
@@ -322,8 +334,7 @@ void Widget::on_cbEnableSM_toggled(bool checked)
     if(hr != S_OK)
         return;
 
-    if(checked) // when load app and StereoMix off
-        this->refreshStereoMixVolume();
+    this->refreshStereoMixVolume();
 }
 
 // choose Playback audio device
