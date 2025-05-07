@@ -212,6 +212,8 @@ void Widget::getStereoMixInfo()
         return;
 
     _isListenSM = valKey.boolVal;
+
+    PropVariantClear(&valKey);
 }
 
 void Widget::refreshStereoMixVolume()
