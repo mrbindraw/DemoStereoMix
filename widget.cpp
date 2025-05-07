@@ -63,6 +63,8 @@ void Widget::showEvent(QShowEvent *)
     _isPowerSaveEnabled ? ui->rbDisable->setChecked(true) : ui->rbContinue->setChecked(true);
 
     _isAppLoading = false;
+
+    on_cbEnableSM_toggled(_isEnabledDevice);
 }
 
 void Widget::getCurrentPlaybackDevice()
@@ -301,10 +303,17 @@ void Widget::on_cbListen_toggled(bool checked)
 // Enable/Disable StereoMix device
 void Widget::on_cbEnableSM_toggled(bool checked)
 {
+    _isEnabledDevice = checked;
+
     if(_isAppLoading)
         return;
 
     qDebug() << Q_FUNC_INFO << checked;
+
+    ui->cbListen->setEnabled(checked);
+    ui->cBox_AudioDevices->setEnabled(checked);
+    ui->rbDisable->setEnabled(checked);
+    ui->rbContinue->setEnabled(checked);
 
     if(!_pPolicyConfig)
         return;
