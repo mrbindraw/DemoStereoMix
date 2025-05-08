@@ -154,6 +154,10 @@ bool SysAudio::getPropertyValue(const wchar_t *deviceId, const PROPERTYKEY &prop
         case VT_LPWSTR:
             outValue = QVariant::fromValue(QString::fromWCharArray(propVariant.pwszVal));
             break;
+        case VT_EMPTY:
+            case VT_NULL:
+                outValue = QVariant();
+            break;
         default:
             qDebug() << "Unsupported type for propVariant.vt: " << Q_FUNC_INFO;
             return false;
