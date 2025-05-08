@@ -74,21 +74,7 @@ CComPtr<IMMDevice> Widget::getStereoMixDevice()
 
 QString Widget::getStereoMixDeviceId()
 {
-    QString deviceIdStr;
-    CComPtr<IMMDevice> device = getStereoMixDevice();
-    if(!device)
-    {
-        qDebug() << "ERROR!: Stereo Mix device not found!" << Q_FUNC_INFO;
-        return QString();
-    }
-
-    LPWSTR deviceId = nullptr;
-    device->GetId(&deviceId);
-    deviceIdStr = QString::fromWCharArray(deviceId);
-    CoTaskMemFree(deviceId);
-    deviceId = nullptr;
-
-    return deviceIdStr;
+    return SysAudio::getInstance().getDeviceId(getStereoMixDevice());
 }
 
 bool Widget::isStereoMixDeviceEnabled()
@@ -149,9 +135,7 @@ void Widget::refreshStereoMixVolume()
         return;
     }
 
-    //SysAudio::getInstance().setDefaultDevice(getStereoMixDeviceId().toStdWString().c_str()); // set StereoMix
-
-    CComPtr<IAudioEndpointVolume> AudioEndpointVolume = SysAudio::getInstance().getDeviceVolume();
+    CComPtr<IAudioEndpointVolume> AudioEndpointVolume = SysAudio::getInstance().getDeviceVolume(getStereoMixDeviceId());
     if(!AudioEndpointVolume)
     {
         qDebug() << "!AudioEndpointVolume: " << Q_FUNC_INFO;
@@ -205,7 +189,7 @@ void Widget::on_horizontalSlider_valueChanged(int value)
         return;
     }
 
-    CComPtr<IAudioEndpointVolume> AudioEndpointVolume = SysAudio::getInstance().getDeviceVolume();
+    CComPtr<IAudioEndpointVolume> AudioEndpointVolume = SysAudio::getInstance().getDeviceVolume(getStereoMixDeviceId());
     if(!AudioEndpointVolume)
     {
         qDebug() << "!AudioEndpointVolume: " << Q_FUNC_INFO;
