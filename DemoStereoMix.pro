@@ -17,9 +17,11 @@ LIBS += Ole32.lib Winmm.lib Shlwapi.lib propsys.lib
 
 
 SOURCES += main.cpp\
+        sysaudio.cpp \
         widget.cpp
 
 HEADERS  += widget.h \
-    PolicyConfig.h
+    PolicyConfig.h \
+    sysaudio.h
 
 FORMS    += widget.ui
