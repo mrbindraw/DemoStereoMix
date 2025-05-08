@@ -64,6 +64,25 @@ CComPtr<IMMDevice> SysAudio::getDevice(const QString &deviceId)
     return Device;
 }
 
+CComPtr<IMMDevice> SysAudio::getDevice(EDataFlow dataFlow, const QString &deviceName)
+{
+    if(deviceName.isEmpty())
+    {
+        return nullptr;
+    }
+
+    const auto &devices = SysAudio::getInstance().getDevices(dataFlow, DEVICE_STATEMASK_ALL);
+    for(const auto &devName : devices.keys())
+    {
+        if(devName.contains(deviceName))
+        {
+            return getDevice(devices[devName]);
+        }
+    }
+
+    return nullptr;
+}
+
 CComPtr<IAudioEndpointVolume> SysAudio::getDeviceVolume(const QString &deviceId)
 {
     CComPtr<IAudioEndpointVolume> AudioEndpointVolume;
