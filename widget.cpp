@@ -5,9 +5,6 @@
 Widget::Widget(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::Widget),
-    _isEnabledDevice(false),
-    _isListenSM(false),
-    _isPowerSaveEnabled(true),
     _isAppLoading(true)
 {
     ui->setupUi(this);
@@ -18,34 +15,35 @@ Widget::Widget(QWidget *parent) :
 
     const auto &devices = SysAudio::getInstance().getDevices(EDataFlow::eRender, DEVICE_STATE_ACTIVE);
     ui->cBox_AudioDevices->addItems(devices.keys());
-
-    this->getStereoMixInfo();
 }
 
 void Widget::showEvent(QShowEvent *)
 {
-    this->refreshStereoMixVolume();
+    const bool isDeviceEnabled = isStereoMixDeviceEnabled();
 
-    this->getCurrentPlaybackDevice();
-
-    ui->cbEnableSM->setChecked(_isEnabledDevice);
-    ui->cbListen->setChecked(_isListenSM);
-    _isPowerSaveEnabled ? ui->rbDisable->setChecked(true) : ui->rbContinue->setChecked(true);
+    ui->cbEnableSM->setChecked(isDeviceEnabled);
 
     _isAppLoading = false;
 
-    on_cbEnableSM_toggled(_isEnabledDevice);
+    on_cbEnableSM_toggled(isDeviceEnabled);
 }
 
 void Widget::getCurrentPlaybackDevice()
 {
     QVariant outValue;
-    if(!SysAudio::getInstance().getPropertyValue(_wstrSMDevId.c_str(), PKEY_MonitorOutput, outValue))
+    if(!SysAudio::getInstance().getPropertyValue(getStereoMixDeviceId().toStdWString().c_str(), PKEY_MonitorOutput, outValue))
     {
+        qDebug() << "!SysAudio::getInstance().getPropertyValue: " << Q_FUNC_INFO;
         return;
     }
 
     const QString deviceIdValue = outValue.toString();
+    if(deviceIdValue.isEmpty())
+    {
+        ui->cBox_AudioDevices->setCurrentIndex(0); // set "Default Playback Device"
+        return;
+    }
+
     const auto &devices = SysAudio::getInstance().getDevices(EDataFlow::eRender, DEVICE_STATE_ACTIVE);
     for (auto it = devices.cbegin(); it != devices.cend(); ++it)
     {
@@ -57,7 +55,7 @@ void Widget::getCurrentPlaybackDevice()
     }
 }
 
-void Widget::getStereoMixInfo()
+CComPtr<IMMDevice> Widget::getStereoMixDevice()
 {
     CComPtr<IMMDevice> device = SysAudio::getInstance().getDevice(EDataFlow::eCapture, "Stereo Mix");
     if(!device)
@@ -68,20 +66,55 @@ void Widget::getStereoMixInfo()
     if(!device)
     {
         qDebug() << "ERROR!: Stereo Mix device not found!" << Q_FUNC_INFO;
-        return;
+        return nullptr;
+    }
+
+    return device;
+}
+
+QString Widget::getStereoMixDeviceId()
+{
+    QString deviceIdStr;
+    CComPtr<IMMDevice> device = getStereoMixDevice();
+    if(!device)
+    {
+        qDebug() << "ERROR!: Stereo Mix device not found!" << Q_FUNC_INFO;
+        return QString();
     }
 
     LPWSTR deviceId = nullptr;
     device->GetId(&deviceId);
-    _wstrSMDevId.assign(deviceId);
+    deviceIdStr = QString::fromWCharArray(deviceId);
     CoTaskMemFree(deviceId);
     deviceId = nullptr;
+
+    return deviceIdStr;
+}
+
+bool Widget::isStereoMixDeviceEnabled()
+{
+    CComPtr<IMMDevice> device = getStereoMixDevice();
+    if(!device)
+    {
+        qDebug() << "ERROR!: Stereo Mix device not found!" << Q_FUNC_INFO;
+        return false;
+    }
 
     DWORD stateDevice = 0;
     device->GetState(&stateDevice);
     // https://msdn.microsoft.com/en-us/library/windows/desktop/dd371410(v=vs.85).aspx
     // https://msdn.microsoft.com/en-us/library/windows/desktop/dd370823(v=vs.85).aspx
-    _isEnabledDevice = stateDevice >= 2 ? false : true;
+    return stateDevice >= 2 ? false : true;
+}
+
+bool Widget::isStereoMixDevicePowerSaveEnabled()
+{
+    CComPtr<IMMDevice> device = getStereoMixDevice();
+    if(!device)
+    {
+        qDebug() << "ERROR!: Stereo Mix device not found!" << Q_FUNC_INFO;
+        return false;
+    }
 
     PROPVARIANT PowerMgrState;
     PropVariantInit(&PowerMgrState);
@@ -89,16 +122,22 @@ void Widget::getStereoMixInfo()
     CComPtr<IPropertyStore> PropertyStore;
     device->OpenPropertyStore(STGM_READ, &PropertyStore);
     PropertyStore->GetValue(PKEY_MonitorPauseOnBattery, &PowerMgrState);
-    _isPowerSaveEnabled = PowerMgrState.boolVal;
+    const bool isPowerSaveEnabled = PowerMgrState.boolVal;
     PropVariantClear(&PowerMgrState);
 
+    return isPowerSaveEnabled;
+}
+
+bool Widget::isStereoMixDeviceListenFromDefaultDevice()
+{
     QVariant outValue;
-    if(!SysAudio::getInstance().getPropertyValue(_wstrSMDevId.c_str(), PKEY_MonitorEnabled, outValue))
+    if(!SysAudio::getInstance().getPropertyValue(getStereoMixDeviceId().toStdWString().c_str(), PKEY_MonitorEnabled, outValue))
     {
-        return;
+        qDebug() << "!SysAudio::getInstance().getPropertyValue: " << Q_FUNC_INFO;
+        return false;
     }
 
-    _isListenSM = outValue.value<bool>();
+    return outValue.value<bool>();
 }
 
 void Widget::refreshStereoMixVolume()
@@ -110,7 +149,7 @@ void Widget::refreshStereoMixVolume()
         return;
     }
 
-    SysAudio::getInstance().setDefaultDevice(_wstrSMDevId.c_str()); // set StereoMix
+    //SysAudio::getInstance().setDefaultDevice(getStereoMixDeviceId().toStdWString().c_str()); // set StereoMix
 
     CComPtr<IAudioEndpointVolume> AudioEndpointVolume = SysAudio::getInstance().getDeviceVolume();
     if(!AudioEndpointVolume)
@@ -129,12 +168,15 @@ void Widget::refreshStereoMixVolume()
 // Enable/Disable StereoMix device
 void Widget::on_cbEnableSM_toggled(bool checked)
 {
-    _isEnabledDevice = checked;
-
     if(_isAppLoading)
     {
         return;
     }
+
+    SysAudio::getInstance().setDefaultDevice(getStereoMixDeviceId().toStdWString().c_str()); // set StereoMix
+
+    ui->cbListen->setChecked(isStereoMixDeviceListenFromDefaultDevice());
+    isStereoMixDevicePowerSaveEnabled() ? ui->rbDisable->setChecked(true) : ui->rbContinue->setChecked(true);
 
     qDebug() << Q_FUNC_INFO << checked;
 
@@ -144,10 +186,13 @@ void Widget::on_cbEnableSM_toggled(bool checked)
     ui->rbContinue->setEnabled(checked);
     ui->rbDisable->setEnabled(checked);
 
-    if(!SysAudio::getInstance().setEndpointVisibility(_wstrSMDevId.c_str(), (int)checked)) // 0/1 - disable/enable StereoMix device
+    if(!SysAudio::getInstance().setEndpointVisibility(getStereoMixDeviceId().toStdWString().c_str(), (int)checked)) // 0/1 - disable/enable StereoMix device
     {
+        qDebug() << "!SysAudio::getInstance().setEndpointVisibility: " << Q_FUNC_INFO;
         return;
     }
+
+    this->getCurrentPlaybackDevice();
 
     this->refreshStereoMixVolume();
 }
@@ -182,18 +227,18 @@ void Widget::on_cbListen_toggled(bool checked)
 
     qDebug() << Q_FUNC_INFO << checked;
 
-    SysAudio::getInstance().setPropertyValue(_wstrSMDevId.c_str(), PKEY_MonitorEnabled, QVariant::fromValue(checked));
+    SysAudio::getInstance().setPropertyValue(getStereoMixDeviceId().toStdWString().c_str(), PKEY_MonitorEnabled, QVariant::fromValue(checked));
 }
 
 // Choose Playback audio device
 void Widget::on_cBox_AudioDevices_activated(int index)
 {
-    qDebug() << index;
+    qDebug() << Q_FUNC_INFO << index;
 
     const auto &devices = SysAudio::getInstance().getDevices(EDataFlow::eRender, DEVICE_STATE_ACTIVE);
     const auto &deviceId = devices[ui->cBox_AudioDevices->currentText()];
     const QVariant varValue = QVariant::fromValue(deviceId);
-    SysAudio::getInstance().setPropertyValue(_wstrSMDevId.c_str(), PKEY_MonitorOutput, varValue);
+    SysAudio::getInstance().setPropertyValue(getStereoMixDeviceId().toStdWString().c_str(), PKEY_MonitorOutput, varValue);
 }
 
 // Power Management control mode
@@ -211,7 +256,7 @@ void Widget::on_rbContinue_toggled(bool checked)
 
     qDebug() << Q_FUNC_INFO << checked;
 
-    SysAudio::getInstance().setPropertyValue(_wstrSMDevId.c_str(), PKEY_MonitorPauseOnBattery, QVariant::fromValue(false));
+    SysAudio::getInstance().setPropertyValue(getStereoMixDeviceId().toStdWString().c_str(), PKEY_MonitorPauseOnBattery, QVariant::fromValue(false));
 }
 
 void Widget::on_rbDisable_toggled(bool checked)
@@ -228,7 +273,7 @@ void Widget::on_rbDisable_toggled(bool checked)
 
     qDebug() << Q_FUNC_INFO << checked;
 
-    SysAudio::getInstance().setPropertyValue(_wstrSMDevId.c_str(), PKEY_MonitorPauseOnBattery, QVariant::fromValue(true));
+    SysAudio::getInstance().setPropertyValue(getStereoMixDeviceId().toStdWString().c_str(), PKEY_MonitorPauseOnBattery, QVariant::fromValue(true));
 }
 
 Widget::~Widget()

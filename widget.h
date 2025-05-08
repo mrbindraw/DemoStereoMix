@@ -35,18 +35,19 @@ private slots:
 
 private:
     Ui::Widget *ui;
-
-    std::wstring _wstrSMDevId;
-    bool _isEnabledDevice;
-    bool _isListenSM;
-    bool _isPowerSaveEnabled;
     bool _isAppLoading;
 
 protected:
     void showEvent(QShowEvent *);
-    void getStereoMixInfo();
     void getCurrentPlaybackDevice();
     void refreshStereoMixVolume();
+
+private:
+    CComPtr<IMMDevice> getStereoMixDevice();
+    QString getStereoMixDeviceId();
+    bool isStereoMixDeviceEnabled();
+    bool isStereoMixDevicePowerSaveEnabled();
+    bool isStereoMixDeviceListenFromDefaultDevice();
 };
 
 #endif // WIDGET_H
