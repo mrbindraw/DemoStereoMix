@@ -38,27 +38,73 @@ void SysAudio::init()
     }
 }
 
-CComPtr<IMMDevice> SysAudio::getDevice(const QString &deviceId)
+CComPtr<IMMDevice> SysAudio::getDefaultDevice(EDataFlow dataFlow)
 {
     CComPtr<IMMDevice> Device;
-    HRESULT hr;
+    HRESULT hr = _pDeviceEnumerator->GetDefaultAudioEndpoint(dataFlow, eConsole, &Device);
+    if(hr != S_OK)
+    {
+        qDebug() << "hr != S_OK: _pDeviceEnumerator->GetDefaultAudioEndpoint: " << Q_FUNC_INFO;
+        return nullptr;
+    }
+
+    return Device;
+}
+
+QString SysAudio::getDeviceName(const CComPtr<IMMDevice> &device) const
+{
+    if(!device)
+    {
+        Q_ASSERT_X(device, Q_FUNC_INFO, "device is nullptr!");
+        return QString();
+    }
+
+    CComPtr<IPropertyStore> PropertyStore;
+    device->OpenPropertyStore(STGM_READ, &PropertyStore);
+
+    PROPVARIANT propDeviceName;
+    PropVariantInit(&propDeviceName);
+    PropertyStore->GetValue(PKEY_Device_FriendlyName, &propDeviceName);
+
+    const QString deviceName = QString::fromWCharArray(propDeviceName.pwszVal);
+    PropVariantClear(&propDeviceName);
+
+    return deviceName;
+}
+
+QString SysAudio::getDeviceId(const CComPtr<IMMDevice> &device) const
+{
+    if(!device)
+    {
+        Q_ASSERT_X(device, Q_FUNC_INFO, "device is nullptr!");
+        return QString();
+    }
+
+    LPWSTR deviceId = nullptr;
+    device->GetId(&deviceId);
+
+    const QString deviceIdStr = QString::fromWCharArray(deviceId);
+
+    CoTaskMemFree(deviceId);
+    deviceId = nullptr;
+
+    return deviceIdStr;
+}
+
+CComPtr<IMMDevice> SysAudio::getDevice(const QString &deviceId)
+{
     if(deviceId.isEmpty())
     {
-        hr = _pDeviceEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &Device);
-        if(hr != S_OK)
-        {
-            qDebug() << "hr != S_OK: _pDeviceEnumerator->GetDefaultAudioEndpoint: " << Q_FUNC_INFO;
-            return nullptr;
-        }
+        Q_ASSERT_X(!deviceId.isEmpty(), Q_FUNC_INFO, "deviceId is empty!");
+        return nullptr;
     }
-    else
+
+    CComPtr<IMMDevice> Device;
+    HRESULT hr = _pDeviceEnumerator->GetDevice(deviceId.toStdWString().c_str(), &Device);
+    if(hr != S_OK)
     {
-        hr = _pDeviceEnumerator->GetDevice(deviceId.toStdWString().c_str(), &Device);
-        if(hr != S_OK)
-        {
-            qDebug() << "hr != S_OK: _pDeviceEnumerator->GetDevice: " << Q_FUNC_INFO;
-            return nullptr;
-        }
+        qDebug() << "hr != S_OK: _pDeviceEnumerator->GetDevice: " << Q_FUNC_INFO;
+        return nullptr;
     }
 
     return Device;
@@ -68,7 +114,15 @@ CComPtr<IMMDevice> SysAudio::getDevice(EDataFlow dataFlow, const QString &device
 {
     if(deviceName.isEmpty())
     {
+        Q_ASSERT_X(!deviceName.isEmpty(), Q_FUNC_INFO, "deviceName is empty!");
         return nullptr;
+    }
+
+    CComPtr<IMMDevice> device = getDefaultDevice(dataFlow);
+    const QString devName = getDeviceName(device);
+    if(devName.contains(deviceName))
+    {
+        return device;
     }
 
     const auto &devices = SysAudio::getInstance().getDevices(dataFlow, DEVICE_STATEMASK_ALL);
@@ -85,6 +139,12 @@ CComPtr<IMMDevice> SysAudio::getDevice(EDataFlow dataFlow, const QString &device
 
 CComPtr<IAudioEndpointVolume> SysAudio::getDeviceVolume(const QString &deviceId)
 {
+    if(deviceId.isEmpty())
+    {
+        Q_ASSERT_X(!deviceId.isEmpty(), Q_FUNC_INFO, "deviceId is empty!");
+        return nullptr;
+    }
+
     CComPtr<IAudioEndpointVolume> AudioEndpointVolume;
     CComPtr<IMMDevice> Device = getDevice(deviceId);
     HRESULT hr = Device->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, NULL, (PVOID *)&AudioEndpointVolume);
@@ -224,27 +284,12 @@ QHash<QString, QString> SysAudio::getDevices(EDataFlow dataFlow, DWORD dwStateMa
     for (UINT i=0; i < Count; i++)
     {
         CComPtr<IMMDevice> Device;
-        CComPtr<IPropertyStore> PropertyStore;
-
         DeviceCollection->Item(i, &Device);
-        Device->OpenPropertyStore(STGM_READ, &PropertyStore);
 
-        PROPVARIANT propDeviceName;
-        PropVariantInit(&propDeviceName);
-        PropertyStore->GetValue(PKEY_Device_FriendlyName, &propDeviceName);
-
-        LPWSTR deviceId = nullptr;
-        Device->GetId(&deviceId);
-
-        const QString deviceIdStr = QString::fromWCharArray(deviceId);
-        const QString deviceNameStr = QString::fromWCharArray(propDeviceName.pwszVal);
+        const QString deviceIdStr = getDeviceId(Device);
+        const QString deviceNameStr = getDeviceName(Device);
 
         Devices.insert(deviceNameStr, deviceIdStr);
-
-        CoTaskMemFree(deviceId);
-        deviceId = nullptr;
-
-        PropVariantClear(&propDeviceName);
     }
 
     return Devices;

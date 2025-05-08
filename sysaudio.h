@@ -44,9 +44,12 @@ public:
 
     void init();
 
-    CComPtr<IMMDevice> getDevice(const QString &deviceId = QString(""));
+    CComPtr<IMMDevice> getDefaultDevice(EDataFlow dataFlow);
+    QString getDeviceName(const CComPtr<IMMDevice> &device) const;
+    QString getDeviceId(const CComPtr<IMMDevice> &device) const;
+    CComPtr<IMMDevice> getDevice(const QString &deviceId);
     CComPtr<IMMDevice> getDevice(EDataFlow dataFlow, const QString &deviceName);
-    CComPtr<IAudioEndpointVolume> getDeviceVolume(const QString &deviceId = QString(""));
+    CComPtr<IAudioEndpointVolume> getDeviceVolume(const QString &deviceId);
     void setDefaultDevice(const wchar_t *deviceId);
     bool setEndpointVisibility(const wchar_t *deviceId, bool isEnabled);
     bool getPropertyValue(const wchar_t *deviceId, const PROPERTYKEY &propertyKey, QVariant &outValue);
