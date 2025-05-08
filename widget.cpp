@@ -59,31 +59,38 @@ void Widget::getCurrentPlaybackDevice()
 
 void Widget::getStereoMixInfo()
 {
-    const auto &devices = SysAudio::getInstance().getDevices(EDataFlow::eCapture, DEVICE_STATEMASK_ALL);
-    for(const auto &deviceName : devices.keys())
+    CComPtr<IMMDevice> device = SysAudio::getInstance().getDevice(EDataFlow::eCapture, "Stereo Mix");
+    if(!device)
     {
-        if(deviceName.contains("Stereo Mix") || deviceName.contains("Стерео микшер"))
-        {
-            const QString deviceIdStr = devices[deviceName];
-            _wstrSMDevId = deviceIdStr.toStdWString();
-            CComPtr<IMMDevice> Device = SysAudio::getInstance().getDevice(deviceIdStr);
-            DWORD stateDevice = 0;
-            Device->GetState(&stateDevice);
-            // https://msdn.microsoft.com/en-us/library/windows/desktop/dd371410(v=vs.85).aspx
-            // https://msdn.microsoft.com/en-us/library/windows/desktop/dd370823(v=vs.85).aspx
-            _isEnabledDevice = stateDevice >= 2 ? false : true;
-
-            PROPVARIANT PowerMgrState;
-            PropVariantInit(&PowerMgrState);
-
-            CComPtr<IPropertyStore> PropertyStore;
-            Device->OpenPropertyStore(STGM_READ, &PropertyStore);
-            PropertyStore->GetValue(PKEY_MonitorPauseOnBattery, &PowerMgrState);
-            _isPowerSaveEnabled = PowerMgrState.boolVal;
-            PropVariantClear(&PowerMgrState);
-            break;
-        }
+        device = SysAudio::getInstance().getDevice(EDataFlow::eCapture, "Стерео микшер");
     }
+
+    if(!device)
+    {
+        qDebug() << "ERROR!: Stereo Mix device not found!" << Q_FUNC_INFO;
+        return;
+    }
+
+    LPWSTR deviceId = nullptr;
+    device->GetId(&deviceId);
+    _wstrSMDevId.assign(deviceId);
+    CoTaskMemFree(deviceId);
+    deviceId = nullptr;
+
+    DWORD stateDevice = 0;
+    device->GetState(&stateDevice);
+    // https://msdn.microsoft.com/en-us/library/windows/desktop/dd371410(v=vs.85).aspx
+    // https://msdn.microsoft.com/en-us/library/windows/desktop/dd370823(v=vs.85).aspx
+    _isEnabledDevice = stateDevice >= 2 ? false : true;
+
+    PROPVARIANT PowerMgrState;
+    PropVariantInit(&PowerMgrState);
+
+    CComPtr<IPropertyStore> PropertyStore;
+    device->OpenPropertyStore(STGM_READ, &PropertyStore);
+    PropertyStore->GetValue(PKEY_MonitorPauseOnBattery, &PowerMgrState);
+    _isPowerSaveEnabled = PowerMgrState.boolVal;
+    PropVariantClear(&PowerMgrState);
 
     QVariant outValue;
     if(!SysAudio::getInstance().getPropertyValue(_wstrSMDevId.c_str(), PKEY_MonitorEnabled, outValue))
