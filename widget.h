@@ -42,8 +42,6 @@ private:
     bool _isPowerSaveEnabled;
     bool _isAppLoading;
 
-    QHash<QString, QString> _playbackDevices;
-
 protected:
     void showEvent(QShowEvent *);
     void getStereoMixInfo();

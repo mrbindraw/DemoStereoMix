@@ -16,8 +16,8 @@ Widget::Widget(QWidget *parent) :
 
     ui->cBox_AudioDevices->insertItem(0, "Default Playback Device");
 
-    _playbackDevices = SysAudio::getInstance().getDevices(EDataFlow::eRender, DEVICE_STATE_ACTIVE);
-    ui->cBox_AudioDevices->addItems(_playbackDevices.keys());
+    const auto &devices = SysAudio::getInstance().getDevices(EDataFlow::eRender, DEVICE_STATE_ACTIVE);
+    ui->cBox_AudioDevices->addItems(devices.keys());
 
     this->getStereoMixInfo();
 }
@@ -46,7 +46,8 @@ void Widget::getCurrentPlaybackDevice()
     }
 
     const QString deviceIdValue = outValue.toString();
-    for (auto it = _playbackDevices.cbegin(); it != _playbackDevices.cend(); ++it)
+    const auto &devices = SysAudio::getInstance().getDevices(EDataFlow::eRender, DEVICE_STATE_ACTIVE);
+    for (auto it = devices.cbegin(); it != devices.cend(); ++it)
     {
         if(it.value() == deviceIdValue)
         {
@@ -181,7 +182,9 @@ void Widget::on_cBox_AudioDevices_activated(int index)
 {
     qDebug() << index;
 
-    const QVariant varValue = QVariant::fromValue(_playbackDevices[ui->cBox_AudioDevices->currentText()]);
+    const auto &devices = SysAudio::getInstance().getDevices(EDataFlow::eRender, DEVICE_STATE_ACTIVE);
+    const auto &deviceId = devices[ui->cBox_AudioDevices->currentText()];
+    const QVariant varValue = QVariant::fromValue(deviceId);
     SysAudio::getInstance().setPropertyValue(_wstrSMDevId.c_str(), PKEY_MonitorOutput, varValue);
 }
 
