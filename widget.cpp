@@ -103,7 +103,7 @@ void Widget::getStereoMixInfo()
 
 void Widget::refreshStereoMixVolume()
 {
-    if(!_isEnabledDevice)
+    if(!ui->cbEnableSM->isChecked())
     {
         ui->horizontalSlider->setValue(0);
         ui->lbl_Value->setText(QString::number(0));
@@ -138,6 +138,7 @@ void Widget::on_cbEnableSM_toggled(bool checked)
 
     qDebug() << Q_FUNC_INFO << checked;
 
+    ui->horizontalSlider->setEnabled(checked);
     ui->cbListen->setEnabled(checked);
     ui->cBox_AudioDevices->setEnabled(checked);
     ui->rbContinue->setEnabled(checked);
@@ -154,7 +155,7 @@ void Widget::on_cbEnableSM_toggled(bool checked)
 // Change volume StereoMix
 void Widget::on_horizontalSlider_valueChanged(int value)
 {
-    if(!_isEnabledDevice)
+    if(!ui->cbEnableSM->isChecked())
     {
         return;
     }
