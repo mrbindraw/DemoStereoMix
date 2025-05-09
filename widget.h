@@ -45,9 +45,6 @@ protected:
 private:
     CComPtr<IMMDevice> getStereoMixDevice();
     QString getStereoMixDeviceId();
-    bool isStereoMixDeviceEnabled();
-    bool isStereoMixDevicePowerSaveEnabled();
-    bool isStereoMixDeviceListenFromDefaultDevice();
 };
 
 #endif // WIDGET_H
