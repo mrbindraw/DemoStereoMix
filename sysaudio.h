@@ -60,14 +60,14 @@ public:
     QHash<QString, QString> getDevices(EDataFlow dataFlow, DWORD dwStateMask);
 
     // utils
-    static float getScalarFromValue(unsigned int value)
+    inline static float getScalarFromValue(int value)
     {
-        return value >= 100.0f ? 1.0f : value / 100.0f;
+        return qAbs(value) >= 100.0f ? 1.0f : value / 100.0f;
     }
 
-    static unsigned int getValueFromScalar(float value)
+    inline static int getValueFromScalar(float value)
     {
-        return (unsigned int)(value >= 1.0f ? 100.0f : value * 100.0f);
+        return qRound(qAbs(value) > 0.0f ? value * 100.0f : 0.0f);
     }
 };
 
