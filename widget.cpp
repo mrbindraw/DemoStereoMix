@@ -86,16 +86,7 @@ void Widget::refreshStereoMixVolume()
         return;
     }
 
-    CComPtr<IAudioEndpointVolume> AudioEndpointVolume = SysAudio::getInstance().getAudioEndpointVolume(getStereoMixDeviceId());
-    if(!AudioEndpointVolume)
-    {
-        qDebug() << "!AudioEndpointVolume: " << Q_FUNC_INFO;
-        return;
-    }
-
-    float scalarVolume = 0.0f;
-    AudioEndpointVolume->GetMasterVolumeLevelScalar(&scalarVolume);
-    float volume = SysAudio::getValueFromScalar(scalarVolume);
+    int volume = SysAudio::getInstance().getDeviceVolume(getStereoMixDeviceId());
     ui->horizontalSlider->setValue(volume);
     ui->lbl_Value->setText(QString::number(volume));
 }
@@ -141,15 +132,7 @@ void Widget::on_horizontalSlider_valueChanged(int value)
         return;
     }
 
-    CComPtr<IAudioEndpointVolume> AudioEndpointVolume = SysAudio::getInstance().getAudioEndpointVolume(getStereoMixDeviceId());
-    if(!AudioEndpointVolume)
-    {
-        qDebug() << "!AudioEndpointVolume: " << Q_FUNC_INFO;
-        return;
-    }
-
-    float val = SysAudio::getScalarFromValue(value);
-    AudioEndpointVolume->SetMasterVolumeLevelScalar(val, nullptr);
+    SysAudio::getInstance().setDeviceVolume(getStereoMixDeviceId(), value);
     ui->lbl_Value->setText(QString::number(value));
 }
 
