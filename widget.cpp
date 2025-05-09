@@ -86,7 +86,7 @@ void Widget::refreshStereoMixVolume()
         return;
     }
 
-    CComPtr<IAudioEndpointVolume> AudioEndpointVolume = SysAudio::getInstance().getDeviceVolume(getStereoMixDeviceId());
+    CComPtr<IAudioEndpointVolume> AudioEndpointVolume = SysAudio::getInstance().getAudioEndpointVolume(getStereoMixDeviceId());
     if(!AudioEndpointVolume)
     {
         qDebug() << "!AudioEndpointVolume: " << Q_FUNC_INFO;
@@ -141,7 +141,7 @@ void Widget::on_horizontalSlider_valueChanged(int value)
         return;
     }
 
-    CComPtr<IAudioEndpointVolume> AudioEndpointVolume = SysAudio::getInstance().getDeviceVolume(getStereoMixDeviceId());
+    CComPtr<IAudioEndpointVolume> AudioEndpointVolume = SysAudio::getInstance().getAudioEndpointVolume(getStereoMixDeviceId());
     if(!AudioEndpointVolume)
     {
         qDebug() << "!AudioEndpointVolume: " << Q_FUNC_INFO;

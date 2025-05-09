@@ -193,7 +193,7 @@ CComPtr<IMMDevice> SysAudio::getDevice(EDataFlow dataFlow, const QString &device
     return nullptr;
 }
 
-CComPtr<IAudioEndpointVolume> SysAudio::getDeviceVolume(const QString &deviceId)
+CComPtr<IAudioEndpointVolume> SysAudio::getAudioEndpointVolume(const QString &deviceId)
 {
     if(deviceId.isEmpty())
     {
