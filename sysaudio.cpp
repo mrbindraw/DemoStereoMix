@@ -91,6 +91,59 @@ QString SysAudio::getDeviceId(const CComPtr<IMMDevice> &device) const
     return deviceIdStr;
 }
 
+bool SysAudio::isDeviceEnabled(const CComPtr<IMMDevice> &device) const
+{
+    if(!device)
+    {
+        Q_ASSERT_X(device, Q_FUNC_INFO, "device is nullptr!");
+        return false;
+    }
+
+    DWORD stateDevice = 0;
+    device->GetState(&stateDevice);
+    // https://msdn.microsoft.com/en-us/library/windows/desktop/dd371410(v=vs.85).aspx
+    // https://msdn.microsoft.com/en-us/library/windows/desktop/dd370823(v=vs.85).aspx
+    return stateDevice >= 2 ? false : true;
+}
+
+bool SysAudio::isDevicePowerSaveEnabled(const CComPtr<IMMDevice> &device) const
+{
+    if(!device)
+    {
+        Q_ASSERT_X(device, Q_FUNC_INFO, "device is nullptr!");
+        return false;
+    }
+
+    PROPVARIANT PowerMgrState;
+    PropVariantInit(&PowerMgrState);
+
+    CComPtr<IPropertyStore> PropertyStore;
+    device->OpenPropertyStore(STGM_READ, &PropertyStore);
+    PropertyStore->GetValue(PKEY_MonitorPauseOnBattery, &PowerMgrState);
+    const bool isPowerSaveEnabled = PowerMgrState.boolVal;
+    PropVariantClear(&PowerMgrState);
+
+    return isPowerSaveEnabled;
+}
+
+bool SysAudio::isListenDevice(const QString &deviceId) const
+{
+    if(deviceId.isEmpty())
+    {
+        Q_ASSERT_X(!deviceId.isEmpty(), Q_FUNC_INFO, "deviceId is empty!");
+        return false;
+    }
+
+    QVariant outValue;
+    if(!SysAudio::getInstance().getPropertyValue(deviceId.toStdWString().c_str(), PKEY_MonitorEnabled, outValue))
+    {
+        qDebug() << "!SysAudio::getInstance().getPropertyValue: " << Q_FUNC_INFO;
+        return false;
+    }
+
+    return outValue.value<bool>();
+}
+
 CComPtr<IMMDevice> SysAudio::getDevice(const QString &deviceId)
 {
     if(deviceId.isEmpty())

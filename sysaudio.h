@@ -47,6 +47,9 @@ public:
     CComPtr<IMMDevice> getDefaultDevice(EDataFlow dataFlow);
     QString getDeviceName(const CComPtr<IMMDevice> &device) const;
     QString getDeviceId(const CComPtr<IMMDevice> &device) const;
+    bool isDeviceEnabled(const CComPtr<IMMDevice> &device) const;
+    bool isDevicePowerSaveEnabled(const CComPtr<IMMDevice> &device) const;
+    bool isListenDevice(const QString &deviceId) const;
     CComPtr<IMMDevice> getDevice(const QString &deviceId);
     CComPtr<IMMDevice> getDevice(EDataFlow dataFlow, const QString &deviceName);
     CComPtr<IAudioEndpointVolume> getDeviceVolume(const QString &deviceId);
