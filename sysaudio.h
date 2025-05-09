@@ -53,7 +53,7 @@ public:
     CComPtr<IMMDevice> getDevice(const QString &deviceId);
     CComPtr<IMMDevice> getDevice(EDataFlow dataFlow, const QString &deviceName);
     CComPtr<IAudioEndpointVolume> getDeviceVolume(const QString &deviceId);
-    void setDefaultDevice(const wchar_t *deviceId);
+    void setDefaultDevice(const QString &deviceId);
     bool setEndpointVisibility(const wchar_t *deviceId, bool isEnabled);
     bool getPropertyValue(const wchar_t *deviceId, const PROPERTYKEY &propertyKey, QVariant &outValue);
     bool setPropertyValue(const wchar_t *deviceId, const PROPERTYKEY &propertyKey, const QVariant &value);

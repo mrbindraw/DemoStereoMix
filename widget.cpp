@@ -108,7 +108,7 @@ void Widget::on_cbEnableSM_toggled(bool checked)
         return;
     }
 
-    SysAudio::getInstance().setDefaultDevice(getStereoMixDeviceId().toStdWString().c_str()); // set StereoMix
+    SysAudio::getInstance().setDefaultDevice(getStereoMixDeviceId()); // set StereoMix
 
     const bool isListenDevice = SysAudio::getInstance().isListenDevice(getStereoMixDeviceId());
     ui->cbListen->setChecked(isListenDevice);

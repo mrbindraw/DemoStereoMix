@@ -213,17 +213,23 @@ CComPtr<IAudioEndpointVolume> SysAudio::getDeviceVolume(const QString &deviceId)
     return AudioEndpointVolume;
 }
 
-void SysAudio::setDefaultDevice(const wchar_t *deviceId)
+void SysAudio::setDefaultDevice(const QString &deviceId)
 {
+    if(deviceId.isEmpty())
+    {
+        Q_ASSERT_X(!deviceId.isEmpty(), Q_FUNC_INFO, "deviceId is empty!");
+        return;
+    }
+
     if(!_pPolicyConfig)
     {
         qDebug() << "!_pPolicyConfig: " << Q_FUNC_INFO;
         return;
     }
 
-    _pPolicyConfig->SetDefaultEndpoint(deviceId, eConsole);
-    _pPolicyConfig->SetDefaultEndpoint(deviceId, eMultimedia);
-    _pPolicyConfig->SetDefaultEndpoint(deviceId, eCommunications);
+    _pPolicyConfig->SetDefaultEndpoint(deviceId.toStdWString().c_str(), eConsole);
+    _pPolicyConfig->SetDefaultEndpoint(deviceId.toStdWString().c_str(), eMultimedia);
+    _pPolicyConfig->SetDefaultEndpoint(deviceId.toStdWString().c_str(), eCommunications);
 }
 
 bool SysAudio::setEndpointVisibility(const wchar_t *deviceId, bool isEnabled)
