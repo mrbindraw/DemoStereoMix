@@ -31,7 +31,7 @@ void Widget::showEvent(QShowEvent *)
 void Widget::getCurrentPlaybackDevice()
 {
     QVariant outValue;
-    if(!SysAudio::getInstance().getPropertyValue(getStereoMixDeviceId().toStdWString().c_str(), PKEY_MonitorOutput, outValue))
+    if(!SysAudio::getInstance().getPropertyValue(getStereoMixDeviceId(), PKEY_MonitorOutput, outValue))
     {
         qDebug() << "!SysAudio::getInstance().getPropertyValue: " << Q_FUNC_INFO;
         return;

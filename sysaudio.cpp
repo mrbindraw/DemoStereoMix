@@ -135,7 +135,7 @@ bool SysAudio::isListenDevice(const QString &deviceId) const
     }
 
     QVariant outValue;
-    if(!SysAudio::getInstance().getPropertyValue(deviceId.toStdWString().c_str(), PKEY_MonitorEnabled, outValue))
+    if(!SysAudio::getInstance().getPropertyValue(deviceId, PKEY_MonitorEnabled, outValue))
     {
         qDebug() << "!SysAudio::getInstance().getPropertyValue: " << Q_FUNC_INFO;
         return false;
@@ -256,8 +256,14 @@ bool SysAudio::setEndpointVisibility(const QString &deviceId, bool isEnabled) co
     return true;
 }
 
-bool SysAudio::getPropertyValue(const wchar_t *deviceId, const PROPERTYKEY &propertyKey, QVariant &outValue)
+bool SysAudio::getPropertyValue(const QString &deviceId, const PROPERTYKEY &propertyKey, QVariant &outValue) const
 {
+    if(deviceId.isEmpty())
+    {
+        Q_ASSERT_X(!deviceId.isEmpty(), Q_FUNC_INFO, "deviceId is empty!");
+        return false;
+    }
+
     if(!_pPolicyConfig)
     {
         qDebug() << "!_pPolicyConfig: " << Q_FUNC_INFO;
@@ -266,7 +272,7 @@ bool SysAudio::getPropertyValue(const wchar_t *deviceId, const PROPERTYKEY &prop
 
     PROPVARIANT propVariant;
     PropVariantInit(&propVariant);
-    HRESULT hr = _pPolicyConfig->GetPropertyValue(deviceId, 0, propertyKey, &propVariant);
+    HRESULT hr = _pPolicyConfig->GetPropertyValue(deviceId.toStdWString().c_str(), 0, propertyKey, &propVariant);
     if(hr != S_OK)
     {
         qDebug() << "hr != S_OK: _pPolicyConfig->GetPropertyValue: " << Q_FUNC_INFO;
