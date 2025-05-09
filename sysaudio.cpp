@@ -213,6 +213,58 @@ CComPtr<IAudioEndpointVolume> SysAudio::getAudioEndpointVolume(const QString &de
     return AudioEndpointVolume;
 }
 
+bool SysAudio::setDeviceVolume(const QString &deviceId, int volume)
+{
+    if(deviceId.isEmpty())
+    {
+        Q_ASSERT_X(!deviceId.isEmpty(), Q_FUNC_INFO, "deviceId is empty!");
+        return false;
+    }
+
+    CComPtr<IAudioEndpointVolume> AudioEndpointVolume = getAudioEndpointVolume(deviceId);
+    if(!AudioEndpointVolume)
+    {
+        qDebug() << "!AudioEndpointVolume: " << Q_FUNC_INFO;
+        return false;
+    }
+
+    float volumeScalar = getScalarFromValue(volume);
+    HRESULT hr = AudioEndpointVolume->SetMasterVolumeLevelScalar(volumeScalar, nullptr);
+    if(hr != S_OK)
+    {
+        qDebug() << "hr != S_OK: AudioEndpointVolume->SetMasterVolumeLevelScalar: " << Q_FUNC_INFO;
+        return false;
+    }
+
+    return true;
+}
+
+int SysAudio::getDeviceVolume(const QString &deviceId)
+{
+    if(deviceId.isEmpty())
+    {
+        Q_ASSERT_X(!deviceId.isEmpty(), Q_FUNC_INFO, "deviceId is empty!");
+        return 0;
+    }
+
+    CComPtr<IAudioEndpointVolume> AudioEndpointVolume = getAudioEndpointVolume(deviceId);
+    if(!AudioEndpointVolume)
+    {
+        qDebug() << "!AudioEndpointVolume: " << Q_FUNC_INFO;
+        return 0;
+    }
+
+    float volumeScalar = 0.0f;
+    HRESULT hr = AudioEndpointVolume->GetMasterVolumeLevelScalar(&volumeScalar);
+    if(hr != S_OK)
+    {
+        qDebug() << "hr != S_OK: AudioEndpointVolume->GetMasterVolumeLevelScalar: " << Q_FUNC_INFO;
+        return 0;
+    }
+
+    return getValueFromScalar(volumeScalar);
+}
+
 void SysAudio::setDefaultDevice(const QString &deviceId)
 {
     if(deviceId.isEmpty())
