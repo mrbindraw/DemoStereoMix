@@ -232,15 +232,21 @@ void SysAudio::setDefaultDevice(const QString &deviceId)
     _pPolicyConfig->SetDefaultEndpoint(deviceId.toStdWString().c_str(), eCommunications);
 }
 
-bool SysAudio::setEndpointVisibility(const wchar_t *deviceId, bool isEnabled)
+bool SysAudio::setEndpointVisibility(const QString &deviceId, bool isEnabled) const
 {
+    if(deviceId.isEmpty())
+    {
+        Q_ASSERT_X(!deviceId.isEmpty(), Q_FUNC_INFO, "deviceId is empty!");
+        return false;
+    }
+
     if(!_pPolicyConfig)
     {
         qDebug() << "!_pPolicyConfig: " << Q_FUNC_INFO;
         return false;
     }
 
-    HRESULT hr = _pPolicyConfig->SetEndpointVisibility(deviceId, (int)isEnabled);
+    HRESULT hr = _pPolicyConfig->SetEndpointVisibility(deviceId.toStdWString().c_str(), (int)isEnabled);
     if(hr != S_OK)
     {
         qDebug() << "hr != S_OK: _pPolicyConfig->SetEndpointVisibility: " << Q_FUNC_INFO;

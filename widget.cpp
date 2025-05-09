@@ -122,7 +122,7 @@ void Widget::on_cbEnableSM_toggled(bool checked)
     ui->rbContinue->setEnabled(checked);
     ui->rbDisable->setEnabled(checked);
 
-    if(!SysAudio::getInstance().setEndpointVisibility(getStereoMixDeviceId().toStdWString().c_str(), (int)checked)) // 0/1 - disable/enable StereoMix device
+    if(!SysAudio::getInstance().setEndpointVisibility(getStereoMixDeviceId(), (int)checked)) // 0/1 - disable/enable StereoMix device
     {
         qDebug() << "!SysAudio::getInstance().setEndpointVisibility: " << Q_FUNC_INFO;
         return;
