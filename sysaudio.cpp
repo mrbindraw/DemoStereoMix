@@ -172,10 +172,13 @@ CComPtr<IMMDevice> SysAudio::getDevice(EDataFlow dataFlow, const QString &device
     }
 
     CComPtr<IMMDevice> device = getDefaultDevice(dataFlow);
-    const QString devName = getDeviceName(device);
-    if(devName.contains(deviceName))
+    if(device)
     {
-        return device;
+        const QString devName = getDeviceName(device);
+        if(devName.contains(deviceName))
+        {
+            return device;
+        }
     }
 
     const auto &devices = SysAudio::getInstance().getDevices(dataFlow, DEVICE_STATEMASK_ALL);
