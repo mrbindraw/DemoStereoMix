@@ -296,8 +296,14 @@ bool SysAudio::getPropertyValue(const wchar_t *deviceId, const PROPERTYKEY &prop
     return true;
 }
 
-bool SysAudio::setPropertyValue(const wchar_t *deviceId, const PROPERTYKEY &propertyKey, const QVariant &value)
+bool SysAudio::setPropertyValue(const QString &deviceId, const PROPERTYKEY &propertyKey, const QVariant &value) const
 {
+    if(deviceId.isEmpty())
+    {
+        Q_ASSERT_X(!deviceId.isEmpty(), Q_FUNC_INFO, "deviceId is empty!");
+        return false;
+    }
+
     if(!_pPolicyConfig)
     {
         qDebug() << "!_pPolicyConfig: " << Q_FUNC_INFO;
@@ -321,7 +327,7 @@ bool SysAudio::setPropertyValue(const wchar_t *deviceId, const PROPERTYKEY &prop
     }
 
 
-    HRESULT hr = _pPolicyConfig->SetPropertyValue(deviceId, 0, propertyKey, &propVariant);
+    HRESULT hr = _pPolicyConfig->SetPropertyValue(deviceId.toStdWString().c_str(), 0, propertyKey, &propVariant);
     if(hr != S_OK)
     {
         qDebug() << "hr != S_OK: _pPolicyConfig->SetPropertyValue: " << Q_FUNC_INFO;

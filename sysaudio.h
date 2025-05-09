@@ -56,7 +56,7 @@ public:
     void setDefaultDevice(const QString &deviceId);
     bool setEndpointVisibility(const QString &deviceId, bool isEnabled) const;
     bool getPropertyValue(const wchar_t *deviceId, const PROPERTYKEY &propertyKey, QVariant &outValue);
-    bool setPropertyValue(const wchar_t *deviceId, const PROPERTYKEY &propertyKey, const QVariant &value);
+    bool setPropertyValue(const QString &deviceId, const PROPERTYKEY &propertyKey, const QVariant &value) const;
     QHash<QString, QString> getDevices(EDataFlow dataFlow, DWORD dwStateMask);
 
     // utils

@@ -163,7 +163,7 @@ void Widget::on_cbListen_toggled(bool checked)
 
     qDebug() << Q_FUNC_INFO << checked;
 
-    SysAudio::getInstance().setPropertyValue(getStereoMixDeviceId().toStdWString().c_str(), PKEY_MonitorEnabled, QVariant::fromValue(checked));
+    SysAudio::getInstance().setPropertyValue(getStereoMixDeviceId(), PKEY_MonitorEnabled, QVariant::fromValue(checked));
 }
 
 // Choose Playback audio device
@@ -174,7 +174,7 @@ void Widget::on_cBox_AudioDevices_activated(int index)
     const auto &devices = SysAudio::getInstance().getDevices(EDataFlow::eRender, DEVICE_STATE_ACTIVE);
     const auto &deviceId = devices[ui->cBox_AudioDevices->currentText()];
     const QVariant varValue = QVariant::fromValue(deviceId);
-    SysAudio::getInstance().setPropertyValue(getStereoMixDeviceId().toStdWString().c_str(), PKEY_MonitorOutput, varValue);
+    SysAudio::getInstance().setPropertyValue(getStereoMixDeviceId(), PKEY_MonitorOutput, varValue);
 }
 
 // Power Management control mode
@@ -192,7 +192,7 @@ void Widget::on_rbContinue_toggled(bool checked)
 
     qDebug() << Q_FUNC_INFO << checked;
 
-    SysAudio::getInstance().setPropertyValue(getStereoMixDeviceId().toStdWString().c_str(), PKEY_MonitorPauseOnBattery, QVariant::fromValue(false));
+    SysAudio::getInstance().setPropertyValue(getStereoMixDeviceId(), PKEY_MonitorPauseOnBattery, QVariant::fromValue(false));
 }
 
 void Widget::on_rbDisable_toggled(bool checked)
@@ -209,7 +209,7 @@ void Widget::on_rbDisable_toggled(bool checked)
 
     qDebug() << Q_FUNC_INFO << checked;
 
-    SysAudio::getInstance().setPropertyValue(getStereoMixDeviceId().toStdWString().c_str(), PKEY_MonitorPauseOnBattery, QVariant::fromValue(true));
+    SysAudio::getInstance().setPropertyValue(getStereoMixDeviceId(), PKEY_MonitorPauseOnBattery, QVariant::fromValue(true));
 }
 
 Widget::~Widget()
