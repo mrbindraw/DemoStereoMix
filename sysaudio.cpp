@@ -135,9 +135,9 @@ bool SysAudio::isListenDevice(const QString &deviceId) const
     }
 
     QVariant outValue;
-    if(!SysAudio::getInstance().getPropertyValue(deviceId, PKEY_MonitorEnabled, outValue))
+    if(!getPropertyValue(deviceId, PKEY_MonitorEnabled, outValue))
     {
-        qDebug() << "!SysAudio::getInstance().getPropertyValue: " << Q_FUNC_INFO;
+        qDebug() << "!getPropertyValue: " << Q_FUNC_INFO;
         return false;
     }
 
@@ -181,7 +181,7 @@ CComPtr<IMMDevice> SysAudio::getDevice(EDataFlow dataFlow, const QString &device
         }
     }
 
-    const auto &devices = SysAudio::getInstance().getDevices(dataFlow, DEVICE_STATEMASK_ALL);
+    const auto &devices = getDevices(dataFlow, DEVICE_STATEMASK_ALL);
     for(const auto &devName : devices.keys())
     {
         if(devName.contains(deviceName))
