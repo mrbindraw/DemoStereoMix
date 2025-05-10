@@ -79,6 +79,8 @@ QString Widget::getStereoMixDeviceId() const
 
 void Widget::refreshStereoMixVolume()
 {
+    // This is fix for crash on exit app. Launch app when no recording devices in the system or all devices disabled in mmsys.cpl.
+    int volume = SysAudio::getInstance().getDeviceVolume(getStereoMixDeviceId());
     if(!ui->cbEnableSM->isChecked())
     {
         ui->horizontalSlider->setValue(0);
@@ -86,7 +88,7 @@ void Widget::refreshStereoMixVolume()
         return;
     }
 
-    int volume = SysAudio::getInstance().getDeviceVolume(getStereoMixDeviceId());
+    //int volume = SysAudio::getInstance().getDeviceVolume(getStereoMixDeviceId());
     ui->horizontalSlider->setValue(volume);
     ui->lbl_Value->setText(QString::number(volume));
 }
