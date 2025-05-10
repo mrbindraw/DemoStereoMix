@@ -156,8 +156,7 @@ void Widget::on_cBox_AudioDevices_activated(int index)
 
     const auto &devices = SysAudio::getInstance().getDevices(EDataFlow::eRender, DEVICE_STATE_ACTIVE);
     const auto &deviceId = devices[ui->cBox_AudioDevices->currentText()];
-    const QVariant varValue = QVariant::fromValue(deviceId);
-    SysAudio::getInstance().setPropertyValue(getStereoMixDeviceId(), PKEY_MonitorOutput, varValue);
+    SysAudio::getInstance().setPropertyValue(getStereoMixDeviceId(), PKEY_MonitorOutput, QVariant::fromValue(deviceId));
 }
 
 // Power Management control mode
