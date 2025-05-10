@@ -41,7 +41,7 @@ protected:
     void showEvent(QShowEvent *);
 
 private:
-    void getCurrentPlaybackDevice();
+    QString getPlaybackDeviceName() const;
     void refreshStereoMixVolume();
     CComPtr<IMMDevice> getStereoMixDevice() const;
     QString getStereoMixDeviceId() const;

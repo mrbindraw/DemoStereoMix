@@ -28,20 +28,19 @@ void Widget::showEvent(QShowEvent *)
     on_cbEnableSM_toggled(isDeviceEnabled);
 }
 
-void Widget::getCurrentPlaybackDevice()
+QString Widget::getPlaybackDeviceName() const
 {
     QVariant outValue;
     if(!SysAudio::getInstance().getPropertyValue(getStereoMixDeviceId(), PKEY_MonitorOutput, outValue))
     {
         qDebug() << "!SysAudio::getInstance().getPropertyValue: " << Q_FUNC_INFO;
-        return;
+        return QString();
     }
 
     const QString deviceIdValue = outValue.toString();
     if(deviceIdValue.isEmpty())
     {
-        ui->cBox_AudioDevices->setCurrentIndex(0); // set "Default Playback Device"
-        return;
+        return QString();
     }
 
     const auto &devices = SysAudio::getInstance().getDevices(EDataFlow::eRender, DEVICE_STATE_ACTIVE);
@@ -49,10 +48,11 @@ void Widget::getCurrentPlaybackDevice()
     {
         if(it.value() == deviceIdValue)
         {
-            ui->cBox_AudioDevices->setCurrentText(it.key());
-            break;
+            return it.key();
         }
     }
+
+    return QString();
 }
 
 CComPtr<IMMDevice> Widget::getStereoMixDevice() const
@@ -119,7 +119,8 @@ void Widget::on_cbEnableSM_toggled(bool checked)
         return;
     }
 
-    this->getCurrentPlaybackDevice();
+    const QString playbackDeviceName = getPlaybackDeviceName();
+    playbackDeviceName.isEmpty() ? ui->cBox_AudioDevices->setCurrentIndex(0) : ui->cBox_AudioDevices->setCurrentText(playbackDeviceName);
 
     this->refreshStereoMixVolume();
 }
