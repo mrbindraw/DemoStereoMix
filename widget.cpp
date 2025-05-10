@@ -55,7 +55,7 @@ void Widget::getCurrentPlaybackDevice()
     }
 }
 
-CComPtr<IMMDevice> Widget::getStereoMixDevice()
+CComPtr<IMMDevice> Widget::getStereoMixDevice() const
 {
     CComPtr<IMMDevice> device = SysAudio::getInstance().getDevice(EDataFlow::eCapture, "Stereo Mix");
     if(!device)
@@ -72,7 +72,7 @@ CComPtr<IMMDevice> Widget::getStereoMixDevice()
     return device;
 }
 
-QString Widget::getStereoMixDeviceId()
+QString Widget::getStereoMixDeviceId() const
 {
     return SysAudio::getInstance().getDeviceId(getStereoMixDevice());
 }

@@ -43,8 +43,8 @@ protected:
     void refreshStereoMixVolume();
 
 private:
-    CComPtr<IMMDevice> getStereoMixDevice();
-    QString getStereoMixDeviceId();
+    CComPtr<IMMDevice> getStereoMixDevice() const;
+    QString getStereoMixDeviceId() const;
 };
 
 #endif // WIDGET_H
