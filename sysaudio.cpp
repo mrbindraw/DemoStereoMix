@@ -1,8 +1,8 @@
 #include "sysaudio.h"
 
 SysAudio::SysAudio() :
-    _pDeviceEnumerator(nullptr),
-    _pPolicyConfig(nullptr)
+    deviceEnumerator(nullptr),
+    policyConfig(nullptr)
 {
 
 }
@@ -16,21 +16,21 @@ void SysAudio::init()
 {
     CoInitialize(nullptr);
 
-    HRESULT hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_INPROC_SERVER, __uuidof(IMMDeviceEnumerator), (LPVOID *)&_pDeviceEnumerator);
+    HRESULT hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), nullptr, CLSCTX_INPROC_SERVER, __uuidof(IMMDeviceEnumerator), (LPVOID *)&deviceEnumerator);
     if (hr != S_OK)
     {
         qDebug() << "hr != S_OK: CoCreateInstance(__uuidof(MMDeviceEnumerator): " << Q_FUNC_INFO;
     }
 
     // for Win 10
-    hr = CoCreateInstance(__uuidof(CPolicyConfigClient), NULL, CLSCTX_INPROC, IID_IPolicyConfig2, (LPVOID *)&_pPolicyConfig);
+    hr = CoCreateInstance(__uuidof(CPolicyConfigClient), nullptr, CLSCTX_INPROC, IID_IPolicyConfig2, (LPVOID *)&policyConfig);
     if(hr != S_OK)
-        hr = CoCreateInstance(__uuidof(CPolicyConfigClient), NULL, CLSCTX_INPROC, IID_IPolicyConfig1, (LPVOID *)&_pPolicyConfig);
+        hr = CoCreateInstance(__uuidof(CPolicyConfigClient), nullptr, CLSCTX_INPROC, IID_IPolicyConfig1, (LPVOID *)&policyConfig);
 
     // for Win Vista, 7, 8, 8.1
     if(hr != S_OK)
     {
-        hr = CoCreateInstance(__uuidof(CPolicyConfigClient), NULL, CLSCTX_INPROC, IID_IPolicyConfig0, (LPVOID *)&_pPolicyConfig);
+        hr = CoCreateInstance(__uuidof(CPolicyConfigClient), nullptr, CLSCTX_INPROC, IID_IPolicyConfig0, (LPVOID *)&policyConfig);
         if(hr != S_OK)
         {
             qDebug() << "hr != S_OK: CoCreateInstance(__uuidof(CPolicyConfigClient): " << Q_FUNC_INFO;
@@ -40,15 +40,15 @@ void SysAudio::init()
 
 CComPtr<IMMDevice> SysAudio::getDefaultDevice(EDataFlow dataFlow)
 {
-    CComPtr<IMMDevice> Device;
-    HRESULT hr = _pDeviceEnumerator->GetDefaultAudioEndpoint(dataFlow, eConsole, &Device);
+    CComPtr<IMMDevice> device;
+    HRESULT hr = deviceEnumerator->GetDefaultAudioEndpoint(dataFlow, eConsole, &device);
     if(hr != S_OK)
     {
-        qDebug() << "hr != S_OK: _pDeviceEnumerator->GetDefaultAudioEndpoint: " << Q_FUNC_INFO;
+        qDebug() << "hr != S_OK: deviceEnumerator->GetDefaultAudioEndpoint: " << Q_FUNC_INFO;
         return nullptr;
     }
 
-    return Device;
+    return device;
 }
 
 QString SysAudio::getDeviceName(const CComPtr<IMMDevice> &device) const
@@ -59,12 +59,12 @@ QString SysAudio::getDeviceName(const CComPtr<IMMDevice> &device) const
         return QString();
     }
 
-    CComPtr<IPropertyStore> PropertyStore;
-    device->OpenPropertyStore(STGM_READ, &PropertyStore);
+    CComPtr<IPropertyStore> propertyStore;
+    device->OpenPropertyStore(STGM_READ, &propertyStore);
 
     PROPVARIANT propDeviceName;
     PropVariantInit(&propDeviceName);
-    PropertyStore->GetValue(PKEY_Device_FriendlyName, &propDeviceName);
+    propertyStore->GetValue(PKEY_Device_FriendlyName, &propDeviceName);
 
     const QString deviceName = QString::fromWCharArray(propDeviceName.pwszVal);
     PropVariantClear(&propDeviceName);
@@ -114,14 +114,14 @@ bool SysAudio::isDevicePowerSaveEnabled(const CComPtr<IMMDevice> &device) const
         return false;
     }
 
-    PROPVARIANT PowerMgrState;
-    PropVariantInit(&PowerMgrState);
+    PROPVARIANT powerMgrState;
+    PropVariantInit(&powerMgrState);
 
-    CComPtr<IPropertyStore> PropertyStore;
-    device->OpenPropertyStore(STGM_READ, &PropertyStore);
-    PropertyStore->GetValue(PKEY_MonitorPauseOnBattery, &PowerMgrState);
-    const bool isPowerSaveEnabled = PowerMgrState.boolVal;
-    PropVariantClear(&PowerMgrState);
+    CComPtr<IPropertyStore> propertyStore;
+    device->OpenPropertyStore(STGM_READ, &propertyStore);
+    propertyStore->GetValue(PKEY_MonitorPauseOnBattery, &powerMgrState);
+    const bool isPowerSaveEnabled = powerMgrState.boolVal;
+    PropVariantClear(&powerMgrState);
 
     return isPowerSaveEnabled;
 }
@@ -152,15 +152,15 @@ CComPtr<IMMDevice> SysAudio::getDevice(const QString &deviceId)
         return nullptr;
     }
 
-    CComPtr<IMMDevice> Device;
-    HRESULT hr = _pDeviceEnumerator->GetDevice(deviceId.toStdWString().c_str(), &Device);
+    CComPtr<IMMDevice> device;
+    HRESULT hr = deviceEnumerator->GetDevice(deviceId.toStdWString().c_str(), &device);
     if(hr != S_OK)
     {
-        qDebug() << "hr != S_OK: _pDeviceEnumerator->GetDevice: " << Q_FUNC_INFO;
+        qDebug() << "hr != S_OK: deviceEnumerator->GetDevice: " << Q_FUNC_INFO;
         return nullptr;
     }
 
-    return Device;
+    return device;
 }
 
 CComPtr<IMMDevice> SysAudio::getDevice(EDataFlow dataFlow, const QString &deviceName)
@@ -201,16 +201,16 @@ CComPtr<IAudioEndpointVolume> SysAudio::getAudioEndpointVolume(const QString &de
         return nullptr;
     }
 
-    CComPtr<IAudioEndpointVolume> AudioEndpointVolume;
-    CComPtr<IMMDevice> Device = getDevice(deviceId);
-    HRESULT hr = Device->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, NULL, (PVOID *)&AudioEndpointVolume);
+    CComPtr<IAudioEndpointVolume> audioEndpointVolume;
+    CComPtr<IMMDevice> device = getDevice(deviceId);
+    HRESULT hr = device->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, nullptr, (PVOID *)&audioEndpointVolume);
     if(hr != S_OK)
     {
-        qDebug() << "hr != S_OK: Device->Activate(__uuidof(IAudioEndpointVolume): " << Q_FUNC_INFO;
+        qDebug() << "hr != S_OK: device->Activate(__uuidof(IAudioEndpointVolume): " << Q_FUNC_INFO;
         return nullptr;
     }
 
-    return AudioEndpointVolume;
+    return audioEndpointVolume;
 }
 
 bool SysAudio::setDeviceVolume(const QString &deviceId, int volume)
@@ -221,18 +221,18 @@ bool SysAudio::setDeviceVolume(const QString &deviceId, int volume)
         return false;
     }
 
-    CComPtr<IAudioEndpointVolume> AudioEndpointVolume = getAudioEndpointVolume(deviceId);
-    if(!AudioEndpointVolume)
+    CComPtr<IAudioEndpointVolume> audioEndpointVolume = getAudioEndpointVolume(deviceId);
+    if(!audioEndpointVolume)
     {
-        qDebug() << "!AudioEndpointVolume: " << Q_FUNC_INFO;
+        qDebug() << "!audioEndpointVolume: " << Q_FUNC_INFO;
         return false;
     }
 
     float volumeScalar = getScalarFromValue(volume);
-    HRESULT hr = AudioEndpointVolume->SetMasterVolumeLevelScalar(volumeScalar, nullptr);
+    HRESULT hr = audioEndpointVolume->SetMasterVolumeLevelScalar(volumeScalar, nullptr);
     if(hr != S_OK)
     {
-        qDebug() << "hr != S_OK: AudioEndpointVolume->SetMasterVolumeLevelScalar: " << Q_FUNC_INFO;
+        qDebug() << "hr != S_OK: audioEndpointVolume->SetMasterVolumeLevelScalar: " << Q_FUNC_INFO;
         return false;
     }
 
@@ -247,18 +247,18 @@ int SysAudio::getDeviceVolume(const QString &deviceId)
         return 0;
     }
 
-    CComPtr<IAudioEndpointVolume> AudioEndpointVolume = getAudioEndpointVolume(deviceId);
-    if(!AudioEndpointVolume)
+    CComPtr<IAudioEndpointVolume> audioEndpointVolume = getAudioEndpointVolume(deviceId);
+    if(!audioEndpointVolume)
     {
-        qDebug() << "!AudioEndpointVolume: " << Q_FUNC_INFO;
+        qDebug() << "!audioEndpointVolume: " << Q_FUNC_INFO;
         return 0;
     }
 
     float volumeScalar = 0.0f;
-    HRESULT hr = AudioEndpointVolume->GetMasterVolumeLevelScalar(&volumeScalar);
+    HRESULT hr = audioEndpointVolume->GetMasterVolumeLevelScalar(&volumeScalar);
     if(hr != S_OK)
     {
-        qDebug() << "hr != S_OK: AudioEndpointVolume->GetMasterVolumeLevelScalar: " << Q_FUNC_INFO;
+        qDebug() << "hr != S_OK: audioEndpointVolume->GetMasterVolumeLevelScalar: " << Q_FUNC_INFO;
         return 0;
     }
 
@@ -273,15 +273,15 @@ void SysAudio::setDefaultDevice(const QString &deviceId)
         return;
     }
 
-    if(!_pPolicyConfig)
+    if(!policyConfig)
     {
-        qDebug() << "!_pPolicyConfig: " << Q_FUNC_INFO;
+        qDebug() << "!policyConfig: " << Q_FUNC_INFO;
         return;
     }
 
-    _pPolicyConfig->SetDefaultEndpoint(deviceId.toStdWString().c_str(), eConsole);
-    _pPolicyConfig->SetDefaultEndpoint(deviceId.toStdWString().c_str(), eMultimedia);
-    _pPolicyConfig->SetDefaultEndpoint(deviceId.toStdWString().c_str(), eCommunications);
+    policyConfig->SetDefaultEndpoint(deviceId.toStdWString().c_str(), eConsole);
+    policyConfig->SetDefaultEndpoint(deviceId.toStdWString().c_str(), eMultimedia);
+    policyConfig->SetDefaultEndpoint(deviceId.toStdWString().c_str(), eCommunications);
 }
 
 bool SysAudio::setEndpointVisibility(const QString &deviceId, bool isEnabled) const
@@ -292,16 +292,16 @@ bool SysAudio::setEndpointVisibility(const QString &deviceId, bool isEnabled) co
         return false;
     }
 
-    if(!_pPolicyConfig)
+    if(!policyConfig)
     {
-        qDebug() << "!_pPolicyConfig: " << Q_FUNC_INFO;
+        qDebug() << "policyConfig: " << Q_FUNC_INFO;
         return false;
     }
 
-    HRESULT hr = _pPolicyConfig->SetEndpointVisibility(deviceId.toStdWString().c_str(), (int)isEnabled);
+    HRESULT hr = policyConfig->SetEndpointVisibility(deviceId.toStdWString().c_str(), (int)isEnabled);
     if(hr != S_OK)
     {
-        qDebug() << "hr != S_OK: _pPolicyConfig->SetEndpointVisibility: " << Q_FUNC_INFO;
+        qDebug() << "hr != S_OK: policyConfig->SetEndpointVisibility: " << Q_FUNC_INFO;
         return false;
     }
 
@@ -316,18 +316,18 @@ bool SysAudio::getPropertyValue(const QString &deviceId, const PROPERTYKEY &prop
         return false;
     }
 
-    if(!_pPolicyConfig)
+    if(!policyConfig)
     {
-        qDebug() << "!_pPolicyConfig: " << Q_FUNC_INFO;
+        qDebug() << "!policyConfig: " << Q_FUNC_INFO;
         return false;
     }
 
     PROPVARIANT propVariant;
     PropVariantInit(&propVariant);
-    HRESULT hr = _pPolicyConfig->GetPropertyValue(deviceId.toStdWString().c_str(), 0, propertyKey, &propVariant);
+    HRESULT hr = policyConfig->GetPropertyValue(deviceId.toStdWString().c_str(), 0, propertyKey, &propVariant);
     if(hr != S_OK)
     {
-        qDebug() << "hr != S_OK: _pPolicyConfig->GetPropertyValue: " << Q_FUNC_INFO;
+        qDebug() << "hr != S_OK: policyConfig->GetPropertyValue: " << Q_FUNC_INFO;
         PropVariantClear(&propVariant);
         return false;
     }
@@ -362,9 +362,9 @@ bool SysAudio::setPropertyValue(const QString &deviceId, const PROPERTYKEY &prop
         return false;
     }
 
-    if(!_pPolicyConfig)
+    if(!policyConfig)
     {
-        qDebug() << "!_pPolicyConfig: " << Q_FUNC_INFO;
+        qDebug() << "!policyConfig: " << Q_FUNC_INFO;
         return false;
     }
 
@@ -385,10 +385,10 @@ bool SysAudio::setPropertyValue(const QString &deviceId, const PROPERTYKEY &prop
     }
 
 
-    HRESULT hr = _pPolicyConfig->SetPropertyValue(deviceId.toStdWString().c_str(), 0, propertyKey, &propVariant);
+    HRESULT hr = policyConfig->SetPropertyValue(deviceId.toStdWString().c_str(), 0, propertyKey, &propVariant);
     if(hr != S_OK)
     {
-        qDebug() << "hr != S_OK: _pPolicyConfig->SetPropertyValue: " << Q_FUNC_INFO;
+        qDebug() << "hr != S_OK: policyConfig->SetPropertyValue: " << Q_FUNC_INFO;
         PropVariantClear(&propVariant);
         return false;
     }
@@ -400,29 +400,29 @@ bool SysAudio::setPropertyValue(const QString &deviceId, const PROPERTYKEY &prop
 
 QHash<QString, QString> SysAudio::getDevices(EDataFlow dataFlow, DWORD dwStateMask)
 {
-    CComPtr<IMMDeviceCollection> DeviceCollection;
-    HRESULT hr = _pDeviceEnumerator->EnumAudioEndpoints(dataFlow, dwStateMask, &DeviceCollection);
+    CComPtr<IMMDeviceCollection> deviceCollection;
+    HRESULT hr = deviceEnumerator->EnumAudioEndpoints(dataFlow, dwStateMask, &deviceCollection);
     if (hr != S_OK)
     {
-        qDebug() << "hr != S_OK: _pDeviceEnumerator->EnumAudioEndpoints: " << Q_FUNC_INFO;
+        qDebug() << "hr != S_OK: deviceEnumerator->EnumAudioEndpoints: " << Q_FUNC_INFO;
         return QHash<QString, QString>();
     }
 
-    UINT Count = 0;
-    DeviceCollection->GetCount(&Count);
+    UINT count = 0;
+    deviceCollection->GetCount(&count);
 
-    QHash<QString, QString> Devices;
+    QHash<QString, QString> devices;
 
-    for (UINT i=0; i < Count; i++)
+    for (UINT i=0; i < count; i++)
     {
-        CComPtr<IMMDevice> Device;
-        DeviceCollection->Item(i, &Device);
+        CComPtr<IMMDevice> device;
+        deviceCollection->Item(i, &device);
 
-        const QString deviceIdStr = getDeviceId(Device);
-        const QString deviceNameStr = getDeviceName(Device);
+        const QString deviceIdStr = getDeviceId(device);
+        const QString deviceNameStr = getDeviceName(device);
 
-        Devices.insert(deviceNameStr, deviceIdStr);
+        devices.insert(deviceNameStr, deviceIdStr);
     }
 
-    return Devices;
+    return devices;
 }

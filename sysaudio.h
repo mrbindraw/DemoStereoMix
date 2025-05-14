@@ -27,8 +27,8 @@ class SysAudio
 private:
     SysAudio();
 
-    CComPtr<IMMDeviceEnumerator> _pDeviceEnumerator;
-    CComPtr<IPolicyConfig>  _pPolicyConfig;
+    CComPtr<IMMDeviceEnumerator> deviceEnumerator;
+    CComPtr<IPolicyConfig>  policyConfig;
 
 public:
     static SysAudio &getInstance()
