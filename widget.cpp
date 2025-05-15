@@ -1,5 +1,3 @@
-#include <initguid.h>
-
 #include "widget.h"
 #include "ui_widget.h"
 
@@ -7,432 +5,200 @@
 Widget::Widget(QWidget *parent) :
     QWidget(parent),
     ui(new Ui::Widget),
-    _pDeviceEnumerator(nullptr),
-    _pDefaultDevice(nullptr),
-    _pPropertyStore(nullptr),
-    _pPolicyConfig(nullptr),
-    _pDeviceCollection(nullptr),
-    _pAudioEndpointVolume(nullptr),
-    _isEnabledDevice(false),
-    _isPowerSaveEnabled(true),
-    _isAppLoading(true),
-    _isListenSM(false)
+    _isAppLoading(true)
 {
     ui->setupUi(this);
 
-    CoInitialize(nullptr);
-    hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_INPROC_SERVER, __uuidof(IMMDeviceEnumerator), (LPVOID *)&_pDeviceEnumerator);
-    if (hr != S_OK)
-        return;
+    SysAudio::getInstance().init();
 
+    ui->cBox_AudioDevices->insertItem(0, "Default Playback Device");
 
-    // for Win 10
-    hr = CoCreateInstance(__uuidof(CPolicyConfigClient), NULL, CLSCTX_INPROC, IID_IPolicyConfig2, (LPVOID *)&_pPolicyConfig);
-    if(hr != S_OK)
-        hr = CoCreateInstance(__uuidof(CPolicyConfigClient), NULL, CLSCTX_INPROC, IID_IPolicyConfig1, (LPVOID *)&_pPolicyConfig);
-
-    // for Win Vista, 7, 8, 8.1
-    if(hr != S_OK)
-        hr = CoCreateInstance(__uuidof(CPolicyConfigClient), NULL, CLSCTX_INPROC, IID_IPolicyConfig0, (LPVOID *)&_pPolicyConfig);
-
-    if(hr != S_OK)
-        return;
-
-
-    this->createPlaybackDevicesList();
-
-    this->getStereoMixInfo();
-
-    this->setDefaultRecordDevice(_wstrSMDevId.c_str()); // set StereoMix
-
-    hr = _pDeviceEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &_pDefaultDevice);
-    if(hr != S_OK) // when all record devices off on load app
-        return;
-
-    hr = _pDefaultDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, NULL, (PVOID *)&_pAudioEndpointVolume);
-    if(hr != S_OK)
-        return;
+    const auto &devices = SysAudio::getInstance().getDevices(EDataFlow::eRender, DEVICE_STATE_ACTIVE);
+    ui->cBox_AudioDevices->addItems(devices.keys());
 }
 
 void Widget::showEvent(QShowEvent *)
 {
-    this->refreshStereoMixVolume();
+    const bool isDeviceEnabled = SysAudio::getInstance().isDeviceEnabled(getStereoMixDevice());
 
-    this->getCurrentPlaybackDevice();
-
-    ui->cbEnableSM->setChecked(_isEnabledDevice);
-    ui->cbListen->setChecked(_isListenSM);
-    _isPowerSaveEnabled ? ui->rbDisable->setChecked(true) : ui->rbContinue->setChecked(true);
+    ui->cbEnableSM->setChecked(isDeviceEnabled);
 
     _isAppLoading = false;
+
+    on_cbEnableSM_toggled(isDeviceEnabled);
 }
 
-void Widget::getCurrentPlaybackDevice()
+QString Widget::getPlaybackDeviceName() const
 {
-    PROPVARIANT propDevId;
-    PropVariantInit(&propDevId);
-
-    if(!_pPolicyConfig)
-        return;
-
-    hr = _pPolicyConfig->GetPropertyValue(_wstrSMDevId.c_str(), 0, PKEY_MonitorOutput, &propDevId);
-    if(hr != S_OK)
+    QVariant outValue;
+    if(!SysAudio::getInstance().getPropertyValue(getStereoMixDeviceId(), PKEY_MonitorOutput, outValue))
     {
-        PropVariantClear(&propDevId);
-        return;
+        qDebug() << "!SysAudio::getInstance().getPropertyValue: " << Q_FUNC_INFO;
+        return QString();
     }
 
-    if(!propDevId.pwszVal)
+    const QString deviceIdValue = outValue.toString();
+    if(deviceIdValue.isEmpty())
     {
-        PropVariantClear(&propDevId);
-        return;
+        return QString();
     }
 
-    std::wstring id;
-    id.assign(propDevId.pwszVal);
-
-    for(int i=0; i < _listAudioDevices.size(); i++)
+    const auto &devices = SysAudio::getInstance().getDevices(EDataFlow::eRender, DEVICE_STATE_ACTIVE);
+    for (auto it = devices.cbegin(); it != devices.cend(); ++it)
     {
-        if(_listAudioDevices.value(i).id.compare(id)==0)
+        if(it.value() == deviceIdValue)
         {
-            ui->cBox_AudioDevices->setCurrentText(_listAudioDevices.value(i).name);
-            break;
+            return it.key();
         }
     }
 
-    PropVariantClear(&propDevId);
+    return QString();
 }
 
-void Widget::createPlaybackDevicesList()
+CComPtr<IMMDevice> Widget::getStereoMixDevice() const
 {
-    _pDeviceEnumerator->EnumAudioEndpoints(eRender, DEVICE_STATE_ACTIVE, &_pDeviceCollection);
-    if (hr != S_OK)
-        return;
-
-    UINT Count = 0;
-    _pDeviceCollection->GetCount(&Count);
-
-    LPWSTR deviceId = nullptr;
-    QString name = "";
-
-    ui->cBox_AudioDevices->insertItem(0, "Default Playback Device");
-
-    for (UINT i=0; i < Count; i++)
+    CComPtr<IMMDevice> device = SysAudio::getInstance().getDevice(EDataFlow::eCapture, "Stereo Mix");
+    if(!device)
     {
-        _pDeviceCollection->Item(i, &_pDefaultDevice);
-        _pDefaultDevice->OpenPropertyStore(STGM_READ, &_pPropertyStore);
-
-        PROPVARIANT namePlaybackDevice;
-        PropVariantInit(&namePlaybackDevice);
-        _pPropertyStore->GetValue(PKEY_Device_FriendlyName, &namePlaybackDevice);
-
-        name = QString::fromWCharArray(namePlaybackDevice.pwszVal);
-        _pDefaultDevice->GetId(&deviceId);
-
-        _stAudioDevice.name = name;
-        _stAudioDevice.id.assign(deviceId);
-        ui->cBox_AudioDevices->addItem(_stAudioDevice.name);
-        _listAudioDevices.append(_stAudioDevice);
-
-        CoTaskMemFree(deviceId);
-        deviceId = nullptr;
-
-        PropVariantClear(&namePlaybackDevice);
+        device = SysAudio::getInstance().getDevice(EDataFlow::eCapture, "Стерео микшер");
     }
+
+    if(!device)
+    {
+        qDebug() << "ERROR!: Stereo Mix device not found!" << Q_FUNC_INFO;
+        return nullptr;
+    }
+
+    return device;
 }
 
-void Widget::setDefaultRecordDevice(const wchar_t *id)
+QString Widget::getStereoMixDeviceId() const
 {
-    if(!_pPolicyConfig)
-        return;
-
-    _pPolicyConfig->SetDefaultEndpoint(id, eConsole);
-    _pPolicyConfig->SetDefaultEndpoint(id, eMultimedia);
-    _pPolicyConfig->SetDefaultEndpoint(id, eCommunications);
-}
-
-void Widget::getStereoMixInfo()
-{
-    _pDeviceEnumerator->EnumAudioEndpoints(eCapture, DEVICE_STATEMASK_ALL, &_pDeviceCollection);
-    if (hr != S_OK)
-        return;
-
-    UINT Count = 0;
-    _pDeviceCollection->GetCount(&Count);
-    DWORD stateDevice = 0;
-    LPWSTR deviceId = nullptr;
-    QString name = "";
-    for (UINT i=0; i < Count; i++)
-    {
-        _pDeviceCollection->Item(i, &_pDefaultDevice);
-        _pDefaultDevice->OpenPropertyStore(STGM_READ, &_pPropertyStore);
-
-        PROPVARIANT nameDevice;
-        PropVariantInit(&nameDevice);
-        _pPropertyStore->GetValue(PKEY_Device_FriendlyName, &nameDevice);
-
-        name = QString::fromWCharArray(nameDevice.pwszVal);
-        if(name.contains("Stereo Mix") || name.contains("Стерео микшер"))
-        {
-            _pDefaultDevice->GetState(&stateDevice);
-            // https://msdn.microsoft.com/en-us/library/windows/desktop/dd371410(v=vs.85).aspx
-            // https://msdn.microsoft.com/en-us/library/windows/desktop/dd370823(v=vs.85).aspx
-            _isEnabledDevice = stateDevice >= 2 ? false : true;
-
-            PROPVARIANT PowerMgrState;
-            PropVariantInit(&PowerMgrState);
-            _pPropertyStore->GetValue(PKEY_MonitorPauseOnBattery, &PowerMgrState);
-            _isPowerSaveEnabled = PowerMgrState.boolVal;
-            PropVariantClear(&PowerMgrState);
-
-            _pDefaultDevice->GetId(&deviceId);
-            _wstrSMDevId.assign(deviceId);
-
-            CoTaskMemFree(deviceId);
-            deviceId = nullptr;
-        }
-
-        PropVariantClear(&nameDevice);
-    }
-
-    if(_pPropertyStore)
-    {
-        _pPropertyStore->Release();
-        _pPropertyStore = nullptr;
-    }
-
-    if(_pDefaultDevice)
-    {
-        _pDefaultDevice->Release();
-        _pDefaultDevice = nullptr;
-    }
-
-    if(_pDeviceCollection)
-    {
-        _pDeviceCollection->Release();
-        _pDeviceCollection = nullptr;
-    }
-
-    if(!_pPolicyConfig)
-        return;
-
-    PROPVARIANT valKey;
-    PropVariantInit(&valKey);
-    hr = _pPolicyConfig->GetPropertyValue(_wstrSMDevId.c_str(), 0, PKEY_MonitorEnabled, &valKey);
-    if(hr != S_OK)
-        return;
-
-    _isListenSM = valKey.boolVal;
+    return SysAudio::getInstance().getDeviceId(getStereoMixDevice());
 }
 
 void Widget::refreshStereoMixVolume()
 {
-    this->setDefaultRecordDevice(_wstrSMDevId.c_str()); // set StereoMix
-
-    hr = _pDeviceEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &_pDefaultDevice);
-    if(hr != S_OK)
-        return;
-
-    hr = _pDefaultDevice->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, NULL, (PVOID *)&_pAudioEndpointVolume);
-    if(hr != S_OK)
-        return;
-
-    if(_pAudioEndpointVolume)
+    // This is fix for crash on exit app. Launch app when no recording devices in the system or all devices disabled in mmsys.cpl.
+    int volume = SysAudio::getInstance().getDeviceVolume(getStereoMixDeviceId());
+    if(!ui->cbEnableSM->isChecked())
     {
-        float scalarVolume = 0.0f;
-        _pAudioEndpointVolume->GetMasterVolumeLevelScalar(&scalarVolume);
-        float volume = getValueFromScalar(scalarVolume);
-        ui->horizontalSlider->setValue(volume);
-        ui->lbl_Value->setText(QString::number(volume));
+        ui->horizontalSlider->setValue(0);
+        ui->lbl_Value->setText(QString::number(0));
+        return;
     }
-}
 
-// utils
-float Widget::getScalarFromValue(unsigned int value)
-{
-    return value >= 100.0f ? 1.0f : value / 100.0f;
-}
-
-unsigned int Widget::getValueFromScalar(float value)
-{
-    return (unsigned int)(value >= 1.0f ? 100.0f : value * 100.0f);
-}
-
-// change volume StereoMix
-void Widget::on_horizontalSlider_valueChanged(int value)
-{
-    if(_pAudioEndpointVolume)
-    {
-        float val = this->getScalarFromValue(value);
-        _pAudioEndpointVolume->SetMasterVolumeLevelScalar(val, nullptr);
-        ui->lbl_Value->setText(QString::number(value));
-    }
-}
-
-// change Listen checker state
-void Widget::on_cbListen_toggled(bool checked)
-{
-    if(_isAppLoading)
-        return;
-
-    qDebug() << Q_FUNC_INFO << checked;
-
-    if(!_pPolicyConfig)
-        return;
-
-    int val = 0;
-    checked ? val = -1 : val = 0;
-
-    PROPVARIANT valKey;
-    PropVariantInit(&valKey);
-
-    // TRUE -1 - on; FALSE 0 - off
-    InitPropVariantFromBoolean(checked, &valKey);
-    hr = _pPolicyConfig->SetPropertyValue(_wstrSMDevId.c_str(), 0, PKEY_MonitorEnabled, &valKey);
-    if(hr != S_OK)
-        return;
-
-    PropVariantClear(&valKey);
+    //int volume = SysAudio::getInstance().getDeviceVolume(getStereoMixDeviceId());
+    ui->horizontalSlider->setValue(volume);
+    ui->lbl_Value->setText(QString::number(volume));
 }
 
 // Enable/Disable StereoMix device
 void Widget::on_cbEnableSM_toggled(bool checked)
 {
     if(_isAppLoading)
+    {
         return;
+    }
+
+    SysAudio::getInstance().setDefaultDevice(getStereoMixDeviceId()); // set StereoMix
+
+    const bool isListenDevice = SysAudio::getInstance().isListenDevice(getStereoMixDeviceId());
+    ui->cbListen->setChecked(isListenDevice);
+    SysAudio::getInstance().isDevicePowerSaveEnabled(getStereoMixDevice()) ? ui->rbDisable->setChecked(true) : ui->rbContinue->setChecked(true);
 
     qDebug() << Q_FUNC_INFO << checked;
 
-    if(!_pPolicyConfig)
-        return;
+    ui->horizontalSlider->setEnabled(checked);
+    ui->cbListen->setEnabled(checked);
+    ui->cBox_AudioDevices->setEnabled(checked);
+    ui->rbContinue->setEnabled(checked);
+    ui->rbDisable->setEnabled(checked);
 
-    hr = _pPolicyConfig->SetEndpointVisibility(_wstrSMDevId.c_str(), (int)checked); // 0/1 - disable/enable StereoMix device
-    if(hr != S_OK)
+    if(!SysAudio::getInstance().setEndpointVisibility(getStereoMixDeviceId(), (int)checked)) // 0/1 - disable/enable StereoMix device
+    {
+        qDebug() << "!SysAudio::getInstance().setEndpointVisibility: " << Q_FUNC_INFO;
         return;
+    }
 
-    if(checked) // when load app and StereoMix off
-        this->refreshStereoMixVolume();
+    const QString playbackDeviceName = getPlaybackDeviceName();
+    playbackDeviceName.isEmpty() ? ui->cBox_AudioDevices->setCurrentIndex(0) : ui->cBox_AudioDevices->setCurrentText(playbackDeviceName);
+
+    this->refreshStereoMixVolume();
 }
 
-// choose Playback audio device
+// Change volume StereoMix
+void Widget::on_horizontalSlider_valueChanged(int value)
+{
+    if(!ui->cbEnableSM->isChecked())
+    {
+        return;
+    }
+
+    SysAudio::getInstance().setDeviceVolume(getStereoMixDeviceId(), value);
+    ui->lbl_Value->setText(QString::number(value));
+}
+
+// Change Listen checker state
+void Widget::on_cbListen_toggled(bool checked)
+{
+    if(_isAppLoading)
+    {
+        return;
+    }
+
+    qDebug() << Q_FUNC_INFO << checked;
+
+    SysAudio::getInstance().setPropertyValue(getStereoMixDeviceId(), PKEY_MonitorEnabled, QVariant::fromValue(checked));
+}
+
+// Choose Playback audio device
 void Widget::on_cBox_AudioDevices_activated(int index)
 {
-    qDebug() << index;
+    qDebug() << Q_FUNC_INFO << index;
 
-    if(!_pPolicyConfig)
-        return;
-
-    PROPVARIANT propDevId;
-    PropVariantInit(&propDevId);
-
-    if(index > 0)
-    {
-        InitPropVariantFromString(_listAudioDevices.value(index-1).id.c_str(), &propDevId);
-        hr = _pPolicyConfig->SetPropertyValue(_wstrSMDevId.c_str(), 0, PKEY_MonitorOutput, &propDevId);
-        if(hr != S_OK)
-            return;
-    }
-    else
-    {
-        hr = _pPolicyConfig->SetPropertyValue(_wstrSMDevId.c_str(), 0, PKEY_MonitorOutput, &propDevId);
-        if(hr != S_OK)
-            return;
-    }
-
-    PropVariantClear(&propDevId);
+    const auto &devices = SysAudio::getInstance().getDevices(EDataFlow::eRender, DEVICE_STATE_ACTIVE);
+    const auto &deviceId = devices[ui->cBox_AudioDevices->currentText()];
+    SysAudio::getInstance().setPropertyValue(getStereoMixDeviceId(), PKEY_MonitorOutput, QVariant::fromValue(deviceId));
 }
 
 // Power Management control mode
-void Widget::on_rbDisable_toggled(bool checked)
-{
-    if(_isAppLoading)
-        return;
-
-    if(!checked) // don't call twice SetPropertyValue when change state Power Management
-        return;
-
-    qDebug() << Q_FUNC_INFO << checked;
-
-    UNREFERENCED_PARAMETER(checked);
-
-    if(!_pPolicyConfig)
-        return;
-
-    PROPVARIANT valKey;
-    PropVariantInit(&valKey);
-
-    InitPropVariantFromBoolean(TRUE, &valKey);
-    hr = _pPolicyConfig->SetPropertyValue(_wstrSMDevId.c_str(), 0, PKEY_MonitorPauseOnBattery, &valKey);
-    if(hr != S_OK)
-        return;
-
-    PropVariantClear(&valKey);
-}
-
 void Widget::on_rbContinue_toggled(bool checked)
 {
     if(_isAppLoading)
+    {
         return;
+    }
 
     if(!checked) // don't call twice SetPropertyValue when change state Power Management
+    {
         return;
+    }
 
     qDebug() << Q_FUNC_INFO << checked;
 
-    if(!_pPolicyConfig)
+    SysAudio::getInstance().setPropertyValue(getStereoMixDeviceId(), PKEY_MonitorPauseOnBattery, QVariant::fromValue(false));
+}
+
+void Widget::on_rbDisable_toggled(bool checked)
+{
+    if(_isAppLoading)
+    {
         return;
+    }
 
-    PROPVARIANT valKey;
-    PropVariantInit(&valKey);
-
-    InitPropVariantFromBoolean(FALSE, &valKey);
-    hr = _pPolicyConfig->SetPropertyValue(_wstrSMDevId.c_str(), 0, PKEY_MonitorPauseOnBattery, &valKey);
-    if(hr != S_OK)
+    if(!checked) // don't call twice SetPropertyValue when change state Power Management
+    {
         return;
+    }
 
-    PropVariantClear(&valKey);
+    qDebug() << Q_FUNC_INFO << checked;
+
+    SysAudio::getInstance().setPropertyValue(getStereoMixDeviceId(), PKEY_MonitorPauseOnBattery, QVariant::fromValue(true));
 }
 
 Widget::~Widget()
 {
-    if(_pPolicyConfig)
-    {
-        _pPolicyConfig->Release();
-        _pPolicyConfig = nullptr;
-    }
-
-    if(_pAudioEndpointVolume)
-    {
-        _pAudioEndpointVolume->Release();
-        _pAudioEndpointVolume = nullptr;
-    }
-
-    if(_pPropertyStore)
-    {
-        _pPropertyStore->Release();
-        _pPropertyStore = nullptr;
-    }
-
-    if(_pDefaultDevice)
-    {
-        _pDefaultDevice->Release();
-        _pDefaultDevice = nullptr;
-    }
-
-    if(_pDeviceCollection)
-    {
-        _pDeviceCollection->Release();
-        _pDeviceCollection = nullptr;
-    }
-
-    if(_pDeviceEnumerator)
-    {
-        _pDeviceEnumerator->Release();
-        _pDeviceEnumerator = nullptr;
-    }
-
-    CoUninitialize();
-
     delete ui;
 }
 
