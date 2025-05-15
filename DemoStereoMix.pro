@@ -4,7 +4,9 @@
 #
 #-------------------------------------------------
 
-QT       += core gui multimedia testlib
+QT       += core gui
+
+win32:CONFIG(debug, debug|release): QT += testlib
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
