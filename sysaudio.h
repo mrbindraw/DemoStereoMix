@@ -21,6 +21,7 @@ DEFINE_PROPERTYKEY(PKEY_MonitorPauseOnBattery, 0x24dbb0fc, 0x9311, 0x4b3d, 0x9c,
 
 #include <QString>
 #include <QDebug>
+#include <QVariant>
 
 class SysAudio
 {
