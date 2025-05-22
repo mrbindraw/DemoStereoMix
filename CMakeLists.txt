@@ -22,6 +22,20 @@ target_link_libraries(DemoStereoMix
         Qt::Widgets
 )
 
+if(WIN32)
+    #[[
+    if(CMAKE_BUILD_TYPE MATCHES "Debug")
+        set_target_properties(DemoStereoMix PROPERTIES
+            LINK_FLAGS "/SUBSYSTEM:CONSOLE"
+        )
+    endif()
+    ]]
+
+    target_link_options(DemoStereoMix PRIVATE
+        "$<$<CONFIG:Debug>:/SUBSYSTEM:CONSOLE>"
+    )
+endif()
+
 include(GNUInstallDirs)
 
 install(TARGETS DemoStereoMix
