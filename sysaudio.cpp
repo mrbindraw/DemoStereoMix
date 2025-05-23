@@ -55,7 +55,7 @@ QString SysAudio::getDeviceName(const CComPtr<IMMDevice> &device) const
 {
     if(!device)
     {
-        Q_ASSERT_X(device, Q_FUNC_INFO, "device is nullptr!");
+        qDebug() << "device is nullptr!" << Q_FUNC_INFO;
         return QString();
     }
 
@@ -76,7 +76,7 @@ QString SysAudio::getDeviceId(const CComPtr<IMMDevice> &device) const
 {
     if(!device)
     {
-        Q_ASSERT_X(device, Q_FUNC_INFO, "device is nullptr!");
+        qDebug() << "device is nullptr!" << Q_FUNC_INFO;
         return QString();
     }
 
@@ -95,7 +95,7 @@ bool SysAudio::isDeviceEnabled(const CComPtr<IMMDevice> &device) const
 {
     if(!device)
     {
-        Q_ASSERT_X(device, Q_FUNC_INFO, "device is nullptr!");
+        qDebug() << "device is nullptr!" << Q_FUNC_INFO;
         return false;
     }
 
@@ -110,7 +110,7 @@ bool SysAudio::isDevicePowerSaveEnabled(const CComPtr<IMMDevice> &device) const
 {
     if(!device)
     {
-        Q_ASSERT_X(device, Q_FUNC_INFO, "device is nullptr!");
+        qDebug() << "device is nullptr!" << Q_FUNC_INFO;
         return false;
     }
 
@@ -130,7 +130,7 @@ bool SysAudio::isListenDevice(const QString &deviceId) const
 {
     if(deviceId.isEmpty())
     {
-        Q_ASSERT_X(!deviceId.isEmpty(), Q_FUNC_INFO, "deviceId is empty!");
+        qDebug() << "deviceId is empty!" << Q_FUNC_INFO;
         return false;
     }
 
@@ -148,7 +148,7 @@ CComPtr<IMMDevice> SysAudio::getDevice(const QString &deviceId)
 {
     if(deviceId.isEmpty())
     {
-        Q_ASSERT_X(!deviceId.isEmpty(), Q_FUNC_INFO, "deviceId is empty!");
+        qDebug() << "deviceId is empty!" << Q_FUNC_INFO;
         return nullptr;
     }
 
@@ -167,7 +167,7 @@ CComPtr<IMMDevice> SysAudio::getDevice(EDataFlow dataFlow, const QString &device
 {
     if(deviceName.isEmpty())
     {
-        Q_ASSERT_X(!deviceName.isEmpty(), Q_FUNC_INFO, "deviceName is empty!");
+        qDebug() << "deviceName is empty!" << Q_FUNC_INFO;
         return nullptr;
     }
 
@@ -198,7 +198,7 @@ CComPtr<IAudioEndpointVolume> SysAudio::getAudioEndpointVolume(const QString &de
 {
     if(deviceId.isEmpty())
     {
-        Q_ASSERT_X(!deviceId.isEmpty(), Q_FUNC_INFO, "deviceId is empty!");
+        qDebug() << "deviceId is empty!" << Q_FUNC_INFO;
         return nullptr;
     }
 
@@ -218,7 +218,7 @@ bool SysAudio::setDeviceVolume(const QString &deviceId, int volume)
 {
     if(deviceId.isEmpty())
     {
-        Q_ASSERT_X(!deviceId.isEmpty(), Q_FUNC_INFO, "deviceId is empty!");
+        qDebug() << "deviceId is empty!" << Q_FUNC_INFO;
         return false;
     }
 
@@ -244,7 +244,7 @@ int SysAudio::getDeviceVolume(const QString &deviceId)
 {
     if(deviceId.isEmpty())
     {
-        Q_ASSERT_X(!deviceId.isEmpty(), Q_FUNC_INFO, "deviceId is empty!");
+        qDebug() << "deviceId is empty!" << Q_FUNC_INFO;
         return 0;
     }
 
@@ -270,7 +270,7 @@ void SysAudio::setDefaultDevice(const QString &deviceId)
 {
     if(deviceId.isEmpty())
     {
-        Q_ASSERT_X(!deviceId.isEmpty(), Q_FUNC_INFO, "deviceId is empty!");
+        qDebug() << "deviceId is empty!" << Q_FUNC_INFO;
         return;
     }
 
@@ -289,7 +289,7 @@ bool SysAudio::setEndpointVisibility(const QString &deviceId, bool isEnabled) co
 {
     if(deviceId.isEmpty())
     {
-        Q_ASSERT_X(!deviceId.isEmpty(), Q_FUNC_INFO, "deviceId is empty!");
+        qDebug() << "deviceId is empty!" << Q_FUNC_INFO;
         return false;
     }
 
@@ -313,7 +313,7 @@ bool SysAudio::getPropertyValue(const QString &deviceId, const PROPERTYKEY &prop
 {
     if(deviceId.isEmpty())
     {
-        Q_ASSERT_X(!deviceId.isEmpty(), Q_FUNC_INFO, "deviceId is empty!");
+        qDebug() << "deviceId is empty!" << Q_FUNC_INFO;
         return false;
     }
 
@@ -359,7 +359,7 @@ bool SysAudio::setPropertyValue(const QString &deviceId, const PROPERTYKEY &prop
 {
     if(deviceId.isEmpty())
     {
-        Q_ASSERT_X(!deviceId.isEmpty(), Q_FUNC_INFO, "deviceId is empty!");
+        qDebug() << "deviceId is empty!" << Q_FUNC_INFO;
         return false;
     }
 
