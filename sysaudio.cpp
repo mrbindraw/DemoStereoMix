@@ -202,8 +202,14 @@ CComPtr<IAudioEndpointVolume> SysAudio::getAudioEndpointVolume(const QString &de
         return nullptr;
     }
 
-    CComPtr<IAudioEndpointVolume> audioEndpointVolume;
     CComPtr<IMMDevice> device = getDevice(deviceId);
+    if(!device)
+    {
+        qDebug() << "device is nullptr!" << Q_FUNC_INFO;
+        return nullptr;
+    }
+
+    CComPtr<IAudioEndpointVolume> audioEndpointVolume;
     HRESULT hr = device->Activate(__uuidof(IAudioEndpointVolume), CLSCTX_INPROC_SERVER, nullptr, (PVOID *)&audioEndpointVolume);
     if(hr != S_OK)
     {
