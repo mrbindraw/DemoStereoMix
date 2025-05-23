@@ -137,6 +137,11 @@ void Widget::handleDeviceEnableOnToggled(bool checked)
 // Change volume StereoMix
 void Widget::handleDeviceVolumeOnValueChanged(int value)
 {
+    if(_isAppLoading)
+    {
+        return;
+    }
+
     if(!ui->ckbDeviceEnable->isChecked())
     {
         return;
@@ -162,6 +167,11 @@ void Widget::handleDeviceListenOnToggled(bool checked)
 // Choose Playback audio device
 void Widget::handleDevicePlaybackOnActivated(int index)
 {
+    if(_isAppLoading)
+    {
+        return;
+    }
+
     qDebug() << Q_FUNC_INFO << index;
 
     const auto &devices = SysAudio::getInstance().getDevices(EDataFlow::eRender, DEVICE_STATE_ACTIVE);
