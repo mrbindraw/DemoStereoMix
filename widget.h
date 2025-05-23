@@ -19,17 +19,17 @@ public:
     ~Widget();
 
 private slots:
-    void on_cbEnableSM_toggled(bool checked);
+    void handleDeviceEnableOnToggled(bool checked);
 
-    void on_horizontalSlider_valueChanged(int value);
+    void handleDeviceVolumeOnValueChanged(int value);
 
-    void on_cbListen_toggled(bool checked);
+    void handleDeviceListenOnToggled(bool checked);
 
-    void on_cBox_AudioDevices_activated(int index);
+    void handleDevicePlaybackOnActivated(int index);
 
-    void on_rbContinue_toggled(bool checked);
+    void handlePowerMgrContinueOnToggled(bool checked);
 
-    void on_rbDisable_toggled(bool checked);
+    void handlePowerMgrDisableOnToggled(bool checked);
 
 private:
     Ui::Widget *ui;

@@ -9,6 +9,13 @@ Widget::Widget(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    connect(ui->cbEnableSM, &QCheckBox::toggled, this, &Widget::handleDeviceEnableOnToggled);
+    connect(ui->horizontalSlider, &QSlider::valueChanged, this, &Widget::handleDeviceVolumeOnValueChanged);
+    connect(ui->cbListen, &QCheckBox::toggled, this, &Widget::handleDeviceListenOnToggled);
+    connect(ui->cBox_AudioDevices, &QComboBox::activated, this, &Widget::handleDevicePlaybackOnActivated);
+    connect(ui->rbContinue, &QRadioButton::toggled, this, &Widget::handlePowerMgrContinueOnToggled);
+    connect(ui->rbDisable, &QRadioButton::toggled, this, &Widget::handlePowerMgrDisableOnToggled);
+
     SysAudio::getInstance().init();
 
     ui->cBox_AudioDevices->insertItem(0, "Default Playback Device");
@@ -25,7 +32,7 @@ void Widget::showEvent(QShowEvent *)
 
     _isAppLoading = false;
 
-    on_cbEnableSM_toggled(isDeviceEnabled);
+    handleDeviceEnableOnToggled(isDeviceEnabled);
 }
 
 QString Widget::getPlaybackDeviceName() const
@@ -94,7 +101,7 @@ void Widget::refreshStereoMixVolume()
 }
 
 // Enable/Disable StereoMix device
-void Widget::on_cbEnableSM_toggled(bool checked)
+void Widget::handleDeviceEnableOnToggled(bool checked)
 {
     if(_isAppLoading)
     {
@@ -128,7 +135,7 @@ void Widget::on_cbEnableSM_toggled(bool checked)
 }
 
 // Change volume StereoMix
-void Widget::on_horizontalSlider_valueChanged(int value)
+void Widget::handleDeviceVolumeOnValueChanged(int value)
 {
     if(!ui->cbEnableSM->isChecked())
     {
@@ -140,7 +147,7 @@ void Widget::on_horizontalSlider_valueChanged(int value)
 }
 
 // Change Listen checker state
-void Widget::on_cbListen_toggled(bool checked)
+void Widget::handleDeviceListenOnToggled(bool checked)
 {
     if(_isAppLoading)
     {
@@ -153,7 +160,7 @@ void Widget::on_cbListen_toggled(bool checked)
 }
 
 // Choose Playback audio device
-void Widget::on_cBox_AudioDevices_activated(int index)
+void Widget::handleDevicePlaybackOnActivated(int index)
 {
     qDebug() << Q_FUNC_INFO << index;
 
@@ -163,7 +170,7 @@ void Widget::on_cBox_AudioDevices_activated(int index)
 }
 
 // Power Management control mode
-void Widget::on_rbContinue_toggled(bool checked)
+void Widget::handlePowerMgrContinueOnToggled(bool checked)
 {
     if(_isAppLoading)
     {
@@ -180,7 +187,7 @@ void Widget::on_rbContinue_toggled(bool checked)
     SysAudio::getInstance().setPropertyValue(getStereoMixDeviceId(), PKEY_MonitorPauseOnBattery, QVariant::fromValue(false));
 }
 
-void Widget::on_rbDisable_toggled(bool checked)
+void Widget::handlePowerMgrDisableOnToggled(bool checked)
 {
     if(_isAppLoading)
     {
