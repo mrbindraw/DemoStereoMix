@@ -377,7 +377,7 @@ bool SysAudio::setPropertyValue(const QString &deviceId, const PROPERTYKEY &prop
         case QMetaType::Bool:
             InitPropVariantFromBoolean(value.toBool(), &propVariant);
             break;
-        case QVariant::String:
+        case QMetaType::QString:
             InitPropVariantFromString(value.toString().toStdWString().c_str(), &propVariant);
             break;
         default:
