@@ -122,7 +122,7 @@ void Widget::handleDeviceEnableOnToggled(bool checked)
     ui->rbtnPowerMgrContinue->setEnabled(checked);
     ui->rbtnPowerMgrDisable->setEnabled(checked);
 
-    if(!SysAudio::getInstance().setEndpointVisibility(getStereoMixDeviceId(), (int)checked)) // 0/1 - disable/enable StereoMix device
+    if(!SysAudio::getInstance().setEndpointVisibility(getStereoMixDeviceId(), checked)) // 0/1 - disable/enable StereoMix device
     {
         qDebug() << "!SysAudio::getInstance().setEndpointVisibility: " << Q_FUNC_INFO;
         return;
