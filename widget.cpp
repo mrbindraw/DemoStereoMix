@@ -26,7 +26,14 @@ Widget::Widget(QWidget *parent) :
 
 void Widget::showEvent(QShowEvent *)
 {
-    const bool isDeviceEnabled = SysAudio::getInstance().isDeviceEnabled(getStereoMixDevice());
+    CComPtr<IMMDevice> device = getStereoMixDevice();
+    if(!device)
+    {
+        QMessageBox::critical(this, "ERROR!", "Stereo Mix device not found!");
+        return;
+    }
+
+    const bool isDeviceEnabled = SysAudio::getInstance().isDeviceEnabled(device);
 
     ui->ckbDeviceEnable->setChecked(isDeviceEnabled);
 
