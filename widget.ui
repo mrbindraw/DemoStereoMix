@@ -6,19 +6,31 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>331</width>
-    <height>219</height>
+    <width>322</width>
+    <height>220</height>
    </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>322</width>
+    <height>220</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>322</width>
+    <height>220</height>
+   </size>
   </property>
   <property name="windowTitle">
    <string>DemoStereoMix</string>
   </property>
-  <widget class="QCheckBox" name="cbListen">
+  <widget class="QCheckBox" name="ckbDeviceListen">
    <property name="geometry">
     <rect>
      <x>10</x>
      <y>40</y>
-     <width>151</width>
+     <width>161</width>
      <height>17</height>
     </rect>
    </property>
@@ -26,7 +38,7 @@
     <string>Listen from default device</string>
    </property>
   </widget>
-  <widget class="QCheckBox" name="cbEnableSM">
+  <widget class="QCheckBox" name="ckbDeviceEnable">
    <property name="geometry">
     <rect>
      <x>10</x>
@@ -42,7 +54,7 @@
     <bool>false</bool>
    </property>
   </widget>
-  <widget class="QGroupBox" name="gbPowerMgr">
+  <widget class="QGroupBox" name="grbPowerMgr">
    <property name="geometry">
     <rect>
      <x>10</x>
@@ -54,7 +66,7 @@
    <property name="title">
     <string>Power Management</string>
    </property>
-   <widget class="QRadioButton" name="rbContinue">
+   <widget class="QRadioButton" name="rbtnPowerMgrContinue">
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -67,7 +79,7 @@
      <string>Continue running when on battery power</string>
     </property>
    </widget>
-   <widget class="QRadioButton" name="rbDisable">
+   <widget class="QRadioButton" name="rbtnPowerMgrDisable">
     <property name="geometry">
      <rect>
       <x>10</x>
@@ -81,12 +93,12 @@
     </property>
    </widget>
   </widget>
-  <widget class="QLabel" name="lbl_PlaybackDevice">
+  <widget class="QLabel" name="lbPlaybackDevice">
    <property name="geometry">
     <rect>
      <x>10</x>
      <y>70</y>
-     <width>151</width>
+     <width>161</width>
      <height>16</height>
     </rect>
    </property>
@@ -94,7 +106,7 @@
     <string>Playback through this device:</string>
    </property>
   </widget>
-  <widget class="QSlider" name="horizontalSlider">
+  <widget class="QSlider" name="hsldDeviceVolume">
    <property name="geometry">
     <rect>
      <x>190</x>
@@ -113,10 +125,10 @@
     <number>0</number>
    </property>
    <property name="orientation">
-    <enum>Qt::Horizontal</enum>
+    <enum>Qt::Orientation::Horizontal</enum>
    </property>
   </widget>
-  <widget class="QLabel" name="lbl_Value">
+  <widget class="QLabel" name="lbDeviceVolume">
    <property name="geometry">
     <rect>
      <x>190</x>
@@ -129,7 +141,7 @@
     <string>Volume</string>
    </property>
   </widget>
-  <widget class="QComboBox" name="cBox_AudioDevices">
+  <widget class="QComboBox" name="cmbPlaybackDevices">
    <property name="geometry">
     <rect>
      <x>10</x>

@@ -9,23 +9,37 @@ Widget::Widget(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    connect(ui->ckbDeviceEnable, &QCheckBox::toggled, this, &Widget::handleDeviceEnableOnToggled);
+    connect(ui->hsldDeviceVolume, &QSlider::valueChanged, this, &Widget::handleDeviceVolumeOnValueChanged);
+    connect(ui->ckbDeviceListen, &QCheckBox::toggled, this, &Widget::handleDeviceListenOnToggled);
+    connect(ui->cmbPlaybackDevices, &QComboBox::activated, this, &Widget::handleDevicePlaybackOnActivated);
+    connect(ui->rbtnPowerMgrContinue, &QRadioButton::toggled, this, &Widget::handlePowerMgrContinueOnToggled);
+    connect(ui->rbtnPowerMgrDisable, &QRadioButton::toggled, this, &Widget::handlePowerMgrDisableOnToggled);
+
     SysAudio::getInstance().init();
 
-    ui->cBox_AudioDevices->insertItem(0, "Default Playback Device");
+    ui->cmbPlaybackDevices->insertItem(0, "Default Playback Device");
 
     const auto &devices = SysAudio::getInstance().getDevices(EDataFlow::eRender, DEVICE_STATE_ACTIVE);
-    ui->cBox_AudioDevices->addItems(devices.keys());
+    ui->cmbPlaybackDevices->addItems(devices.keys());
 }
 
 void Widget::showEvent(QShowEvent *)
 {
-    const bool isDeviceEnabled = SysAudio::getInstance().isDeviceEnabled(getStereoMixDevice());
+    CComPtr<IMMDevice> device = getStereoMixDevice();
+    if(!device)
+    {
+        QMessageBox::critical(this, "ERROR!", "Stereo Mix device not found!");
+        return;
+    }
 
-    ui->cbEnableSM->setChecked(isDeviceEnabled);
+    const bool isDeviceEnabled = SysAudio::getInstance().isDeviceEnabled(device);
+
+    ui->ckbDeviceEnable->setChecked(isDeviceEnabled);
 
     _isAppLoading = false;
 
-    on_cbEnableSM_toggled(isDeviceEnabled);
+    handleDeviceEnableOnToggled(isDeviceEnabled);
 }
 
 QString Widget::getPlaybackDeviceName() const
@@ -81,20 +95,20 @@ void Widget::refreshStereoMixVolume()
 {
     // This is fix for crash on exit app. Launch app when no recording devices in the system or all devices disabled in mmsys.cpl.
     int volume = SysAudio::getInstance().getDeviceVolume(getStereoMixDeviceId());
-    if(!ui->cbEnableSM->isChecked())
+    if(!ui->ckbDeviceEnable->isChecked())
     {
-        ui->horizontalSlider->setValue(0);
-        ui->lbl_Value->setText(QString::number(0));
+        ui->hsldDeviceVolume->setValue(0);
+        ui->lbDeviceVolume->setText(QString::number(0));
         return;
     }
 
     //int volume = SysAudio::getInstance().getDeviceVolume(getStereoMixDeviceId());
-    ui->horizontalSlider->setValue(volume);
-    ui->lbl_Value->setText(QString::number(volume));
+    ui->hsldDeviceVolume->setValue(volume);
+    ui->lbDeviceVolume->setText(QString::number(volume));
 }
 
 // Enable/Disable StereoMix device
-void Widget::on_cbEnableSM_toggled(bool checked)
+void Widget::handleDeviceEnableOnToggled(bool checked)
 {
     if(_isAppLoading)
     {
@@ -104,43 +118,48 @@ void Widget::on_cbEnableSM_toggled(bool checked)
     SysAudio::getInstance().setDefaultDevice(getStereoMixDeviceId()); // set StereoMix
 
     const bool isListenDevice = SysAudio::getInstance().isListenDevice(getStereoMixDeviceId());
-    ui->cbListen->setChecked(isListenDevice);
-    SysAudio::getInstance().isDevicePowerSaveEnabled(getStereoMixDevice()) ? ui->rbDisable->setChecked(true) : ui->rbContinue->setChecked(true);
+    ui->ckbDeviceListen->setChecked(isListenDevice);
+    SysAudio::getInstance().isDevicePowerSaveEnabled(getStereoMixDevice()) ? ui->rbtnPowerMgrDisable->setChecked(true) : ui->rbtnPowerMgrContinue->setChecked(true);
 
     qDebug() << Q_FUNC_INFO << checked;
 
-    ui->horizontalSlider->setEnabled(checked);
-    ui->cbListen->setEnabled(checked);
-    ui->cBox_AudioDevices->setEnabled(checked);
-    ui->rbContinue->setEnabled(checked);
-    ui->rbDisable->setEnabled(checked);
+    ui->hsldDeviceVolume->setEnabled(checked);
+    ui->ckbDeviceListen->setEnabled(checked);
+    ui->cmbPlaybackDevices->setEnabled(checked);
+    ui->rbtnPowerMgrContinue->setEnabled(checked);
+    ui->rbtnPowerMgrDisable->setEnabled(checked);
 
-    if(!SysAudio::getInstance().setEndpointVisibility(getStereoMixDeviceId(), (int)checked)) // 0/1 - disable/enable StereoMix device
+    if(!SysAudio::getInstance().setEndpointVisibility(getStereoMixDeviceId(), checked)) // 0/1 - disable/enable StereoMix device
     {
         qDebug() << "!SysAudio::getInstance().setEndpointVisibility: " << Q_FUNC_INFO;
         return;
     }
 
     const QString playbackDeviceName = getPlaybackDeviceName();
-    playbackDeviceName.isEmpty() ? ui->cBox_AudioDevices->setCurrentIndex(0) : ui->cBox_AudioDevices->setCurrentText(playbackDeviceName);
+    playbackDeviceName.isEmpty() ? ui->cmbPlaybackDevices->setCurrentIndex(0) : ui->cmbPlaybackDevices->setCurrentText(playbackDeviceName);
 
     this->refreshStereoMixVolume();
 }
 
 // Change volume StereoMix
-void Widget::on_horizontalSlider_valueChanged(int value)
+void Widget::handleDeviceVolumeOnValueChanged(int value)
 {
-    if(!ui->cbEnableSM->isChecked())
+    if(_isAppLoading)
+    {
+        return;
+    }
+
+    if(!ui->ckbDeviceEnable->isChecked())
     {
         return;
     }
 
     SysAudio::getInstance().setDeviceVolume(getStereoMixDeviceId(), value);
-    ui->lbl_Value->setText(QString::number(value));
+    ui->lbDeviceVolume->setText(QString::number(value));
 }
 
 // Change Listen checker state
-void Widget::on_cbListen_toggled(bool checked)
+void Widget::handleDeviceListenOnToggled(bool checked)
 {
     if(_isAppLoading)
     {
@@ -153,17 +172,22 @@ void Widget::on_cbListen_toggled(bool checked)
 }
 
 // Choose Playback audio device
-void Widget::on_cBox_AudioDevices_activated(int index)
+void Widget::handleDevicePlaybackOnActivated(int index)
 {
+    if(_isAppLoading)
+    {
+        return;
+    }
+
     qDebug() << Q_FUNC_INFO << index;
 
     const auto &devices = SysAudio::getInstance().getDevices(EDataFlow::eRender, DEVICE_STATE_ACTIVE);
-    const auto &deviceId = devices[ui->cBox_AudioDevices->currentText()];
+    const auto &deviceId = devices[ui->cmbPlaybackDevices->currentText()];
     SysAudio::getInstance().setPropertyValue(getStereoMixDeviceId(), PKEY_MonitorOutput, QVariant::fromValue(deviceId));
 }
 
 // Power Management control mode
-void Widget::on_rbContinue_toggled(bool checked)
+void Widget::handlePowerMgrContinueOnToggled(bool checked)
 {
     if(_isAppLoading)
     {
@@ -180,7 +204,7 @@ void Widget::on_rbContinue_toggled(bool checked)
     SysAudio::getInstance().setPropertyValue(getStereoMixDeviceId(), PKEY_MonitorPauseOnBattery, QVariant::fromValue(false));
 }
 
-void Widget::on_rbDisable_toggled(bool checked)
+void Widget::handlePowerMgrDisableOnToggled(bool checked)
 {
     if(_isAppLoading)
     {
