@@ -10,6 +10,7 @@ Widget::Widget(QWidget *parent) :
     ui->setupUi(this);
 
     connect(ui->ckbDeviceEnable, &QCheckBox::toggled, this, &Widget::handleDeviceEnableOnToggled);
+    connect(ui->hsldDeviceVolume, SIGNAL(valueChanged(int)), ui->lbDeviceVolume, SLOT(setNum(int)));
     connect(ui->hsldDeviceVolume, &QSlider::valueChanged, this, &Widget::handleDeviceVolumeOnValueChanged);
     connect(ui->ckbDeviceListen, &QCheckBox::toggled, this, &Widget::handleDeviceListenOnToggled);
     connect(ui->cmbPlaybackDevices, &QComboBox::activated, this, &Widget::handleDevicePlaybackOnActivated);
@@ -98,13 +99,11 @@ void Widget::refreshStereoMixVolume()
     if(!ui->ckbDeviceEnable->isChecked())
     {
         ui->hsldDeviceVolume->setValue(0);
-        ui->lbDeviceVolume->setText(QString::number(0));
         return;
     }
 
     //int volume = SysAudio::getInstance().getDeviceVolume(getStereoMixDeviceId());
     ui->hsldDeviceVolume->setValue(volume);
-    ui->lbDeviceVolume->setText(QString::number(volume));
 }
 
 // Enable/Disable StereoMix device
@@ -155,7 +154,6 @@ void Widget::handleDeviceVolumeOnValueChanged(int value)
     }
 
     SysAudio::getInstance().setDeviceVolume(getStereoMixDeviceId(), value);
-    ui->lbDeviceVolume->setText(QString::number(value));
 }
 
 // Change Listen checker state
