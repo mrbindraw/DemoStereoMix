@@ -1,24 +1,15 @@
-This Demo show how to change settings StereoMix 
-(mmsys.cpl Recording->Stereo Mix: Enable/Disable device, Volume, ListenChecker, Playback device, Power Management)
-without thirdparty libs.
+This Qt App can control settings of StereoMix in Windows OS: enable/disable device, change volume, playback device and power management (mmsys.cpl).  
+Used COM and WASAPI without third party libs.
 
-COM Interfaces: IMMDevice, IMMDeviceEnumerator, IMMDeviceCollection, IAudioEndpointVolume, IPropertyStore, IPolicyConfig
+**COM Interfaces:** `IMMDevice, IMMDeviceEnumerator, IMMDeviceCollection, IAudioEndpointVolume, IPropertyStore, IPolicyConfig`.
 
+> [!NOTE]
+> EDataFlow enumeration:  
+> https://learn.microsoft.com/en-us/windows/win32/api/mmdeviceapi/ne-mmdeviceapi-edataflow
+> 
+> Recording devices (mmsys.cpl):  
+> `[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Capture]`   
 
--------------
-Correct test:
--------------
-OS: Windows x64 Vista, 7, 8, 8.1, 10
-IDE: Qt5.5.0 - 5.11.1
-WindowsSDK 8.1, 10
-
-
--------------
-Info:
--------------
-EDataFlow enumeration
-https://msdn.microsoft.com/en-us/library/windows/desktop/dd370828(v=vs.85).aspx
-[HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Capture] Recording devices
-
-IPolicyConfig undocumented COM interface GUID interface can be chenged and prototype methods as well. 
-Check to debug mmsys.cpl (mmsys.pdb)
+> [!IMPORTANT]
+> The COM interface: `IPolicyConfig` is undocumented and the `GUID` can be changed in Windows OS.  
+> For debugging, download symbols mmsys.pdb.
