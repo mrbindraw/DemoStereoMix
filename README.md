@@ -1,4 +1,6 @@
-This Qt App can control settings of StereoMix in Windows OS: enable/disable device, change volume, playback device and power management (mmsys.cpl).  
+# DemoStereoMix
+
+This Qt App can control settings of Stereo Mix in Windows OS: enable/disable device, change volume, playback device and power management (mmsys.cpl).  
 Used COM and WASAPI without third party libs.
 
 **COM Interfaces:** `IMMDevice, IMMDeviceEnumerator, IMMDeviceCollection, IAudioEndpointVolume, IPropertyStore, IPolicyConfig`.
